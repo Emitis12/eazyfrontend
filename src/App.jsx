@@ -5,6 +5,7 @@ import Hero from "./components/Hero/Herosection";
 import Deliveranything from "./components/Deliver/DeliverAnything";
 import City from "./components/Cities";
 import Mobiledeliver from "./components/Mobiledeliver";
+import WorkTogether from "./components/WorkTogether";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Deliveranything />
         <City />
         <Mobiledeliver />
+        <WorkTogether />
       </div>
     </Router>
   );

@@ -18,7 +18,7 @@ export default function MobileOrderSection() {
       <div className="flex flex-col items-center gap-4">
         <h2 className="text-4xl font-bold text-center">Your Order is Mobile</h2>
         <p className="text-lg text-center text-gray-800 max-w-xl">
-          Order from your phone, track your rider, get it at your delivery at your doorstep.
+          Order from your phone, track your rider, get your delivery at your doorstep.
         </p>
       </div>
 
