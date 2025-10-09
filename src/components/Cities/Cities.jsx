@@ -1,6 +1,6 @@
 import React from "react";
 import { FaMapMarkerAlt } from "react-icons/fa";
-import deliveryMap from "../assets/globe.png"; // replace with your actual image
+import deliveryMap from "../../assets/globe.png"; // replace with your actual image
 
 const cities = [
   "Lagos",
@@ -22,7 +22,7 @@ const cities = [
 
 export default function CitiesSection() {
   return (
-    <section className="w-full bg-blue-600 py-20 flex flex-col md:flex-row items-center justify-center px-6 md:px-20 gap-12">
+    <section className="w-full bg-[#008BE0] py-20 flex flex-col md:flex-row items-center justify-center px-6 md:px-20 gap-12">
       {/* Image */}
       <div className="md:w-1/2 flex justify-center mb-8 md:mb-0">
         <img

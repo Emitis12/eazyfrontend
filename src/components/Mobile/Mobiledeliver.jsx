@@ -1,6 +1,6 @@
 import React from "react";
 import { FaMobileAlt } from "react-icons/fa";
-import mobileAppImg from "../assets/phone.png";
+import mobileAppImg from "../../assets/phone.png";
 
 export default function MobileOrderSection() {
   return (

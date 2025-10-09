@@ -36,7 +36,7 @@ const deliveryOptions = [
 export default function DeliverAnything() {
   return (
     <section className="w-full bg-white py-20 flex flex-col items-center">
-      <h2 className="text-4xl md:text-5xl font-bold text-blue-600 mb-16 text-center">
+      <h2 className="text-4xl md:text-5xl font-bold text-[#008BE0] mb-16 text-center">
         You Order, We Deliver
       </h2>
 
