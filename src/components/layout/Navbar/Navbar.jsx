@@ -3,7 +3,7 @@ import { Button, Badge } from "antd";
 import { motion } from "framer-motion";
 import { UserOutlined, BellOutlined } from "@ant-design/icons";
 import { Link } from "react-router-dom";
-import logowhite from "../../assets/logowhite.png";
+import logowhite from "../../../assets/logowhite.png";
 
 export default function Navbar({ isLoggedIn, notifications = [] }) {
   const [isVisible, setIsVisible] = useState(true);

@@ -13,6 +13,13 @@ import {
   FaPaperPlane,
 } from "react-icons/fa";
 
+/**
+ * Returns sidebar links based on user role.
+ * @param {string} role - User role (Admin, Vendor, Rider, User)
+ * @param {number} badgeCount - Optional badge count for dynamic display
+ * @param {function} handleTasksClick - Optional callback for Active Orders / Tasks click
+ * @returns {Array} Array of sidebar link objects
+ */
 export const getSidebarLinks = (role, badgeCount = 0, handleTasksClick) => {
   switch (role) {
     case "Admin":
@@ -27,6 +34,13 @@ export const getSidebarLinks = (role, badgeCount = 0, handleTasksClick) => {
     case "Vendor":
       return [
         { label: "Dashboard", path: "/vendor/dashboard", icon: FaTachometerAlt },
+        { 
+          label: "Active Orders", 
+          path: "/vendor/active-orders", 
+          icon: FaBoxOpen, 
+          badge: badgeCount > 0 ? badgeCount : null, // dynamic badge
+          onClick: handleTasksClick, // opens modal
+        },
         { label: "Orders", path: "/vendor/orders", icon: FaBoxOpen },
         { label: "Products", path: "/vendor/products", icon: FaGift },
         { label: "Offers", path: "/vendor/offers", icon: FaGift },
@@ -41,7 +55,7 @@ export const getSidebarLinks = (role, badgeCount = 0, handleTasksClick) => {
           label: "Delivery Tasks",
           path: "/rider/tasks",
           icon: FaMotorcycle,
-          badge: badgeCount,
+          badge: badgeCount > 0 ? badgeCount : null,
           onClick: handleTasksClick,
         },
         { label: "Earnings", path: "/rider/earnings", icon: FaWallet },

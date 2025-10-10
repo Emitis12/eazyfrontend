@@ -3,18 +3,27 @@ import React, { useEffect, useState } from "react";
 import CommonSidebar from "../../common/SideBar";
 import { getSidebarLinks } from "../../../utils/SidebarHelper";
 
-export default function RiderSidebar({ newOrdersCount, onTasksViewed }) {
-  const [badgeCount, setBadgeCount] = useState(newOrdersCount || 0);
+/**
+ * RiderSidebar component
+ * @param {number} newOrdersCount - Number of incoming delivery tasks
+ * @param {function} onTasksViewed - Callback when rider views tasks (resets badge)
+ */
+export default function RiderSidebar({ newOrdersCount = 0, onTasksViewed }) {
+  const [badgeCount, setBadgeCount] = useState(newOrdersCount);
 
+  // Update badge dynamically when newOrdersCount changes
   useEffect(() => {
-    setBadgeCount(newOrdersCount || 0);
+    setBadgeCount(newOrdersCount);
   }, [newOrdersCount]);
 
+  // When rider clicks on Delivery Tasks
   const handleTasksClick = () => {
-    setBadgeCount(0);
+    setBadgeCount(0); // reset badge
     if (onTasksViewed) onTasksViewed();
   };
 
+  // Get sidebar links with dynamic badge & click handler
   const riderLinks = getSidebarLinks("Rider", badgeCount, handleTasksClick);
+
   return <CommonSidebar links={riderLinks} role="Rider" />;
 }

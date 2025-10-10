@@ -1,4 +1,3 @@
-// src/routes/AppRoutes.jsx
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
@@ -7,6 +6,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
 import NotFound from "../pages/NotFound";
+import Unauthorized from "../pages/Unauthorized"; // 👈 optional but good UX
 
 // 👤 User Pages
 import UserDashboard from "../pages/user/Dashboard";
@@ -15,6 +15,7 @@ import Wishlist from "../pages/user/Wishlist";
 import Profile from "../pages/user/Profile";
 import Marketplace from "../pages/user/Marketplace";
 import SendParcel from "../pages/user/SendParcel";
+import OrderTracking from "../pages/user/OrderTracking"; // 👈 newly added tracker
 
 // 🛍️ Vendor Pages
 import VendorDashboard from "../pages/vendor/Dashboard";
@@ -38,7 +39,9 @@ export default function AppRoutes() {
   return (
     <Router>
       <Routes>
-        {/* Auth Routes */}
+        {/* ==========================
+            AUTH ROUTES
+        =========================== */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
@@ -48,13 +51,14 @@ export default function AppRoutes() {
         {/* ==========================
             USER ROUTES
         =========================== */}
-        <Route element={<ProtectedRoute allowedRoles={["User"]} />}>
+        <Route element={<ProtectedRoute allowedRoles={["Customer", "User"]} />}>
           <Route path="/user/dashboard" element={<UserDashboard />} />
           <Route path="/user/orders" element={<Orders />} />
           <Route path="/user/wishlist" element={<Wishlist />} />
           <Route path="/user/profile" element={<Profile />} />
           <Route path="/user/marketplace" element={<Marketplace />} />
           <Route path="/user/send-parcel" element={<SendParcel />} />
+          <Route path="/user/order-tracking/:orderId" element={<OrderTracking />} />
         </Route>
 
         {/* ==========================
@@ -87,7 +91,10 @@ export default function AppRoutes() {
           <Route path="/admin/reports" element={<Reports />} />
         </Route>
 
-        {/* Fallback */}
+        {/* ==========================
+            MISC ROUTES
+        =========================== */}
+        <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
