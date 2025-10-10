@@ -1,6 +1,6 @@
 import React from "react";
 import Table from "../../components/common/Table";
-import { Button } from "../../components/common/Button";
+import Button from "../../components/common/Button";
 
 export default function Offers() {
   return (

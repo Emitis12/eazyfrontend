@@ -1,7 +1,7 @@
 import React from "react";
 import UserSidebar from "../../components/layout/Sidebar/UserSidebar";
 import { Outlet } from "react-router-dom";
-import { Card } from "../../components/common/Card";
+import Card from "../../components/common/Card";
 import LiveRiderTracker from "../../components/Map/LiveRiderTracker";
 
 export default function Dashboard() {
@@ -11,7 +11,7 @@ export default function Dashboard() {
       <UserSidebar />
 
       {/* Main content */}
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-6 transition-all duration-300">
         <h2 className="text-3xl font-bold mb-6 text-gray-800">User Dashboard</h2>
 
         {/* Premium Analytics Cards */}

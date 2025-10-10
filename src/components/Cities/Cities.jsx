@@ -20,7 +20,7 @@ const cities = [
   "Owerri",
 ];
 
-export default function CitiesSection() {
+export default function Cities() {
   return (
     <section className="w-full bg-[#008BE0] py-16 flex flex-col items-center justify-center px-6 md:px-20 gap-10">
       {/* Image at top */}

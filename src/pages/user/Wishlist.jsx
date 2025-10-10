@@ -1,5 +1,5 @@
 import React from "react";
-import { Card } from "../../components/common/Card";
+import Card from "../../components/common/Card";
 
 const wishlistItems = [
   { id: 1, name: "Groceries Pack", price: "$50" },

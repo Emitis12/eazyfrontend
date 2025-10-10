@@ -1,34 +1,49 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import ProtectedRoute from "./ProtectedRoute";
+import ProtectedRoute from "./ProtectedRoutes";
 
-// 🏠 Common Pages
+// ===== Landing Page Sections =====
+import Hero from "../components/Hero/Herosection";
+import Deliveranything from "../components/Deliver/DeliverAnything";
+import City from "../components/Cities/Cities";
+import Mobiledeliver from "../components/Mobile/MobileDeliver";
+import WorkTogether from "../components/Worktogether/WorkTogether";
+import EmailAlert from "../components/Emailalert/EmailAlerts";
+
+// ===== Legal Pages =====
+import TermsAndConditions from "../pages/legal/TermsAndConditions";
+import PrivacyPolicy from "../pages/legal/PrivacyPolicy";
+import CookiesPolicy from "../pages/legal/CookiesPolicy";
+import Sitemap from "../pages/legal/Sitemap";
+
+// ===== Auth Pages =====
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
 import NotFound from "../pages/NotFound";
-import Unauthorized from "../pages/Unauthorized"; // 👈 optional but good UX
+import Unauthorized from "../pages/Unauthorized";
 
-// 👤 User Pages
+// ===== User Pages =====
 import UserDashboard from "../pages/user/Dashboard";
 import Orders from "../pages/user/Orders";
 import Wishlist from "../pages/user/Wishlist";
 import Profile from "../pages/user/Profile";
 import Marketplace from "../pages/user/Marketplace";
 import SendParcel from "../pages/user/SendParcel";
-import OrderTracking from "../pages/user/OrderTracking"; // 👈 newly added tracker
+import OrderTracking from "../pages/user/OrderTracking";
 
-// 🛍️ Vendor Pages
+// ===== Vendor Pages =====
 import VendorDashboard from "../pages/vendor/Dashboard";
 import VendorOrders from "../pages/vendor/Orders";
 import Products from "../pages/vendor/Products";
 import Offers from "../pages/vendor/Offers";
+import Wallet from "../pages/vendor/Wallet";
 
-// 🚴 Rider Pages
+// ===== Rider Pages =====
 import RiderDashboard from "../pages/rider/Dashboard";
 import DeliveryTasks from "../pages/rider/DeliveryTasks";
 import Earnings from "../pages/rider/Earnings";
 
-// 👨‍💼 Admin Pages
+// ===== Admin Pages =====
 import AdminDashboard from "../pages/admin/Dashboard";
 import Users from "../pages/admin/Users";
 import Vendors from "../pages/admin/Vendors";
@@ -40,13 +55,34 @@ export default function AppRoutes() {
     <Router>
       <Routes>
         {/* ==========================
+            LANDING & PUBLIC PAGES
+        =========================== */}
+        <Route
+          path="/"
+          element={
+            <>
+              <Hero />
+              <Deliveranything />
+              <City />
+              <Mobiledeliver />
+              <WorkTogether />
+              <EmailAlert />
+            </>
+          }
+        />
+        <Route path="/terms" element={<TermsAndConditions />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/cookies" element={<CookiesPolicy />} />
+        <Route path="/sitemap" element={<Sitemap />} />
+
+        {/* ==========================
             AUTH ROUTES
         =========================== */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
         {/* Default Redirect */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
 
         {/* ==========================
             USER ROUTES
@@ -92,7 +128,7 @@ export default function AppRoutes() {
         </Route>
 
         {/* ==========================
-            MISC ROUTES
+            MISC
         =========================== */}
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="*" element={<NotFound />} />

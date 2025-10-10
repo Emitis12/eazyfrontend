@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import RiderSidebar from "../../components/layout/sidebar/RiderSidebar";
 import { Outlet } from "react-router-dom";
-import { Card } from "../../components/common/Card";
+import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import { notify } from "../../components/common/Notification";
 import { io } from "socket.io-client";

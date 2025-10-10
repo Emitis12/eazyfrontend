@@ -2,7 +2,9 @@
 import axios from "axios";
 import { notify } from "../components/common/Notification";
 
-// ✅ Base API setup
+/**
+ * ===== Base API Setup =====
+ */
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:3002/api",
   headers: {
@@ -10,29 +12,68 @@ const API = axios.create({
   },
 });
 
-// ✅ Helper to get the right token (supports multiple roles)
-function getAuthToken() {
-  return (
-    localStorage.getItem("authToken") ||
-    localStorage.getItem("userToken") ||
-    localStorage.getItem("vendorToken") ||
-    localStorage.getItem("riderToken")
-  );
+/**
+ * ===== Role Tokens =====
+ * Store/retrieve tokens separately for each user type
+ */
+export function setAdminToken(token) {
+  if (token) localStorage.setItem("adminToken", token);
+  else localStorage.removeItem("adminToken");
 }
 
-// ✅ Request interceptor
+export function getAdminToken() {
+  return localStorage.getItem("adminToken");
+}
+
+export function setVendorToken(token) {
+  if (token) localStorage.setItem("vendorToken", token);
+  else localStorage.removeItem("vendorToken");
+}
+
+export function getVendorToken() {
+  return localStorage.getItem("vendorToken");
+}
+
+export function setRiderToken(token) {
+  if (token) localStorage.setItem("riderToken", token);
+  else localStorage.removeItem("riderToken");
+}
+
+export function getRiderToken() {
+  return localStorage.getItem("riderToken");
+}
+
+export function setCustomerToken(token) {
+  if (token) localStorage.setItem("customerToken", token);
+  else localStorage.removeItem("customerToken");
+}
+
+export function getCustomerToken() {
+  return localStorage.getItem("customerToken");
+}
+
+/**
+ * ===== Get Active Token (All Roles) =====
+ */
+export function getAuthToken() {
+  return getAdminToken() || getVendorToken() || getRiderToken() || getCustomerToken();
+}
+
+/**
+ * ===== Request Interceptor =====
+ */
 API.interceptors.request.use(
   (config) => {
     const token = getAuthToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// ✅ Response interceptor (error & session handling)
+/**
+ * ===== Response Interceptor =====
+ */
 API.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -58,7 +99,9 @@ API.interceptors.response.use(
   }
 );
 
-// ✅ Generic helper functions
+/**
+ * ===== Generic API Helpers =====
+ */
 export const ApiHelper = {
   get: (url, params) => API.get(url, { params }).then((res) => res.data),
   post: (url, data) => API.post(url, data).then((res) => res.data),
@@ -67,23 +110,52 @@ export const ApiHelper = {
   delete: (url) => API.delete(url).then((res) => res.data),
 };
 
-// ✅ Specialized API Endpoints
+/**
+ * ===== Orders API =====
+ */
 export const OrderAPI = {
-  // 🧾 Create new order
   createOrder: (data) => API.post("/orders", data).then((res) => res.data),
-
-  // 🚴 Assign a rider to an order
-  assignRider: (data) =>
-    API.post("/orders/assign-rider", data).then((res) => res.data),
-
-  // 💵 Rider confirms payment (Pay-on-Delivery)
-  confirmPayment: (orderId) =>
-    API.patch(`/orders/${orderId}/confirm-payment`).then((res) => res.data),
-
-  // 📦 Fetch user or rider orders
-  getOrders: (params) =>
-    API.get("/orders", { params }).then((res) => res.data),
+  assignRider: (data) => API.post("/orders/assign-rider", data).then((res) => res.data),
+  confirmPayment: (orderId) => API.patch(`/orders/${orderId}/confirm-payment`).then((res) => res.data),
+  getOrders: (params) => API.get("/orders", { params }).then((res) => res.data),
+  getActiveVendorOrders: () => API.get("/orders/vendor/active").then((res) => res.data),
+  getActiveRiderOrders: (riderId) => API.get(`/orders/rider/active/${riderId}`).then((res) => res.data),
 };
 
-// ✅ Default export for direct axios usage
+/**
+ * ===== Users API =====
+ */
+export const UserAPI = {
+  getProfile: () => API.get("/users/me").then((res) => res.data),
+  updateProfile: (data) => API.put("/users/me", data).then((res) => res.data),
+  login: (data) => API.post("/auth/login", data).then((res) => res.data),
+  register: (data) => API.post("/auth/register", data).then((res) => res.data),
+};
+
+/**
+ * ===== Vendors API =====
+ */
+export const VendorAPI = {
+  getProducts: () => API.get("/products/vendor").then((res) => res.data),
+  getOffers: () => API.get("/offers/vendor").then((res) => res.data),
+  updateOffer: (offerId, data) => API.put(`/offers/${offerId}`, data).then((res) => res.data),
+};
+
+/**
+ * ===== Riders API =====
+ */
+export const RiderAPI = {
+  getTasks: (riderId) => API.get(`/riders/${riderId}/tasks`).then((res) => res.data),
+  updateEarnings: (riderId, data) => API.patch(`/riders/${riderId}/earnings`, data).then((res) => res.data),
+};
+
+/**
+ * ===== Chat API =====
+ */
+export const ChatAPI = {
+  getChats: () => API.get("/chats").then((res) => res.data),
+  sendMessage: (chatId, message) => API.post(`/chats/${chatId}/message`, { message }).then((res) => res.data),
+  createChat: (participants) => API.post("/chats", { participants }).then((res) => res.data),
+};
+
 export default API;

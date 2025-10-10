@@ -12,7 +12,7 @@ import {
 import { useCart } from "../../context/CartContext";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import { API_URL } from "../../utils/api"; // ✅ Make sure this is configured properly
+import API from "../../utils/api"; // ✅ Make sure this is configured properly
 
 // 🧭 Sidebar Categories
 const categories = [
@@ -38,7 +38,7 @@ export default function Marketplace() {
     const fetchVendors = async () => {
       setLoading(true);
       try {
-        const { data } = await axios.get(`${API_URL}/vendors`);
+        const { data } = await axios.get(`${API}/vendors`);
         setVendors(data?.vendors || []);
       } catch (error) {
         console.error("Error fetching vendors:", error);

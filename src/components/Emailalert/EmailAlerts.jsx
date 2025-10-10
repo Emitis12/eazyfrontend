@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function PremiumEmailAlert() {
+export default function EmailAlerts() {
   return (
     <div className="relative w-full flex justify-center">
       {/* Overlapping floating card centered between sections */}

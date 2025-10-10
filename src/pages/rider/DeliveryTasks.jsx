@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Table } from "../../components/common/Table";
-import { Button } from "../../components/common/Button";
+import Table from "../../components/common/Table";
+import Button from "../../components/common/Button";
 import { getAdminToken } from "../../utils/api"; // or your auth util
 import axios from "axios";
 

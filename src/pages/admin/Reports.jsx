@@ -1,8 +1,8 @@
 // src/pages/admin/Reports.jsx
 import React from "react";
-import AdminSidebar from "../../components/layout/sidebar/AdminSidebar";
+import AdminSidebar from "../../components/layout/Sidebar/AdminSidebar";
 import { Line, Bar, Pie } from "react-chartjs-2";
-import { useFetch } from "../../hooks/useFetch";
+import useFetch from "../../hooks/useFetch";
 
 export default function Reports() {
   const { data: stats } = useFetch("/api/admin/dashboardStats");

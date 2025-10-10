@@ -1,8 +1,8 @@
 // src/pages/admin/Vendors.jsx
 import React from "react";
-import AdminSidebar from "../../components/layout/sidebar/AdminSidebar";
+import AdminSidebar from "../../components/layout/Sidebar/VendorSidebar";
 import Table from "../../components/common/Table";
-import { useFetch } from "../../hooks/useFetch";
+import useFetch from "../../hooks/useFetch";
 import Button from "../../components/common/Button";
 
 export default function Vendors() {

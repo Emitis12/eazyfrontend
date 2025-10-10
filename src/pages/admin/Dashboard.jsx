@@ -4,7 +4,7 @@ import AdminSidebar from "../../components/layout/Sidebar/AdminSidebar";
 import Card from "../../components/common/Card";
 import Table from "../../components/common/Table";
 import { Line, Bar, Pie } from "react-chartjs-2";
-import { useFetch } from "../../hooks/useFetch";
+import useFetch from "../../hooks/useFetch";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, PointElement, LineElement, ArcElement } from "chart.js";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend);

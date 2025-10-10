@@ -13,14 +13,13 @@ export default function ProtectedRoute({ allowedRoles = [] }) {
   // Pull all possible tokens
   const tokens = {
     Admin: getAdminToken(),
-    Vendor: getVendorToken?.(),
-    Rider: getRiderToken?.(),
-    Customer: getCustomerToken?.(),
+    Vendor: getVendorToken(),
+    Rider: getRiderToken(),
+    Customer: getCustomerToken(),
   };
 
   // Detect which user is logged in
-  const activeRole =
-    Object.entries(tokens).find(([_, token]) => !!token)?.[0] || null;
+  const activeRole = Object.entries(tokens).find(([_, token]) => token)?.[0] || null;
 
   // No token? Redirect to login
   if (!activeRole) {

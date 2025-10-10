@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Card } from "../../components/common/Card";
+import Card from "../../components/common/Card";
 import LiveRiderTracker from "../../components/Map/LiveRiderTracker";
 
 const sampleOrders = [
