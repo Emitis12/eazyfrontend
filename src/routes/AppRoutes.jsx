@@ -6,7 +6,7 @@ import ProtectedRoute from "./ProtectedRoutes";
 import Hero from "../components/Hero/Herosection";
 import Deliveranything from "../components/Deliver/DeliverAnything";
 import City from "../components/Cities/Cities";
-import Mobiledeliver from "../components/Mobile/MobileDeliver";
+import Mobiledeliver from "../components/Mobile/Mobiledeliver";
 import WorkTogether from "../components/Worktogether/WorkTogether";
 import EmailAlert from "../components/Emailalert/EmailAlerts";
 
