@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import { Button, Badge } from "antd";
 import { motion } from "framer-motion";
 import { UserOutlined, BellOutlined } from "@ant-design/icons";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // ✅ Add useNavigate
 import logowhite from "../../../assets/logowhite.png";
 
 export default function Navbar({ isLoggedIn, notifications = [] }) {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
+  const navigate = useNavigate(); // ✅ Initialize navigation
 
   // Scroll hide/show effect
   useEffect(() => {
@@ -96,6 +97,7 @@ export default function Navbar({ isLoggedIn, notifications = [] }) {
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = "#008BE0";
                   }}
+                  onClick={() => navigate("/login")} // ✅ Navigate to Login page
                 >
                   Login
                 </Button>

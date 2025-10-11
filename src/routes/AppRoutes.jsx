@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoutes";
 
 // ===== Landing Page Sections =====
@@ -36,7 +36,6 @@ import VendorDashboard from "../pages/vendor/Dashboard";
 import VendorOrders from "../pages/vendor/Orders";
 import Products from "../pages/vendor/Products";
 import Offers from "../pages/vendor/Offers";
-import Wallet from "../pages/vendor/Wallet";
 
 // ===== Rider Pages =====
 import RiderDashboard from "../pages/rider/Dashboard";
@@ -52,87 +51,65 @@ import Reports from "../pages/admin/Reports";
 
 export default function AppRoutes() {
   return (
-    <Router>
-      <Routes>
-        {/* ==========================
-            LANDING & PUBLIC PAGES
-        =========================== */}
-        <Route
-          path="/"
-          element={
-            <>
-              <Hero />
-              <Deliveranything />
-              <City />
-              <Mobiledeliver />
-              <WorkTogether />
-              <EmailAlert />
-            </>
-          }
-        />
-        <Route path="/terms" element={<TermsAndConditions />} />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/cookies" element={<CookiesPolicy />} />
-        <Route path="/sitemap" element={<Sitemap />} />
+    <Routes>
+      {/* Public Routes */}
+      <Route
+        path="/"
+        element={
+          <>
+            <Hero />
+            <Deliveranything />
+            <City />
+            <Mobiledeliver />
+            <WorkTogether />
+            <EmailAlert />
+          </>
+        }
+      />
+      <Route path="/terms" element={<TermsAndConditions />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/cookies" element={<CookiesPolicy />} />
+      <Route path="/sitemap" element={<Sitemap />} />
 
-        {/* ==========================
-            AUTH ROUTES
-        =========================== */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+      {/* Auth Routes */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
 
-        {/* Default Redirect */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+      {/* Protected Routes */}
+      <Route element={<ProtectedRoute allowedRoles={["Customer", "User"]} />}>
+        <Route path="/user/dashboard" element={<UserDashboard />} />
+        <Route path="/user/orders" element={<Orders />} />
+        <Route path="/user/wishlist" element={<Wishlist />} />
+        <Route path="/user/profile" element={<Profile />} />
+        <Route path="/user/marketplace" element={<Marketplace />} />
+        <Route path="/user/send-parcel" element={<SendParcel />} />
+        <Route path="/user/order-tracking/:orderId" element={<OrderTracking />} />
+      </Route>
 
-        {/* ==========================
-            USER ROUTES
-        =========================== */}
-        <Route element={<ProtectedRoute allowedRoles={["Customer", "User"]} />}>
-          <Route path="/user/dashboard" element={<UserDashboard />} />
-          <Route path="/user/orders" element={<Orders />} />
-          <Route path="/user/wishlist" element={<Wishlist />} />
-          <Route path="/user/profile" element={<Profile />} />
-          <Route path="/user/marketplace" element={<Marketplace />} />
-          <Route path="/user/send-parcel" element={<SendParcel />} />
-          <Route path="/user/order-tracking/:orderId" element={<OrderTracking />} />
-        </Route>
+      <Route element={<ProtectedRoute allowedRoles={["Vendor"]} />}>
+        <Route path="/vendor/dashboard" element={<VendorDashboard />} />
+        <Route path="/vendor/orders" element={<VendorOrders />} />
+        <Route path="/vendor/products" element={<Products />} />
+        <Route path="/vendor/offers" element={<Offers />} />
+      </Route>
 
-        {/* ==========================
-            VENDOR ROUTES
-        =========================== */}
-        <Route element={<ProtectedRoute allowedRoles={["Vendor"]} />}>
-          <Route path="/vendor/dashboard" element={<VendorDashboard />} />
-          <Route path="/vendor/orders" element={<VendorOrders />} />
-          <Route path="/vendor/products" element={<Products />} />
-          <Route path="/vendor/offers" element={<Offers />} />
-        </Route>
+      <Route element={<ProtectedRoute allowedRoles={["Rider"]} />}>
+        <Route path="/rider/dashboard" element={<RiderDashboard />} />
+        <Route path="/rider/tasks" element={<DeliveryTasks />} />
+        <Route path="/rider/earnings" element={<Earnings />} />
+      </Route>
 
-        {/* ==========================
-            RIDER ROUTES
-        =========================== */}
-        <Route element={<ProtectedRoute allowedRoles={["Rider"]} />}>
-          <Route path="/rider/dashboard" element={<RiderDashboard />} />
-          <Route path="/rider/tasks" element={<DeliveryTasks />} />
-          <Route path="/rider/earnings" element={<Earnings />} />
-        </Route>
+      <Route element={<ProtectedRoute allowedRoles={["Admin"]} />}>
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/users" element={<Users />} />
+        <Route path="/admin/vendors" element={<Vendors />} />
+        <Route path="/admin/riders" element={<Riders />} />
+        <Route path="/admin/reports" element={<Reports />} />
+      </Route>
 
-        {/* ==========================
-            ADMIN ROUTES
-        =========================== */}
-        <Route element={<ProtectedRoute allowedRoles={["Admin"]} />}>
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/users" element={<Users />} />
-          <Route path="/admin/vendors" element={<Vendors />} />
-          <Route path="/admin/riders" element={<Riders />} />
-          <Route path="/admin/reports" element={<Reports />} />
-        </Route>
-
-        {/* ==========================
-            MISC
-        =========================== */}
-        <Route path="/unauthorized" element={<Unauthorized />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </Router>
+      {/* Misc */}
+      <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 }
