@@ -2,32 +2,71 @@ import { useState, useEffect } from "react";
 import { Button, Badge } from "antd";
 import { motion } from "framer-motion";
 import { UserOutlined, BellOutlined } from "@ant-design/icons";
-import { Link, useNavigate } from "react-router-dom"; // ✅ Add useNavigate
+import { Link, useNavigate } from "react-router-dom";
 import logowhite from "../../../assets/logowhite.png";
+import { listenAuthChange } from "../../../utils/authEvents";
 
-export default function Navbar({ isLoggedIn, notifications = [] }) {
+export default function Navbar({ notifications = [] }) {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
-  const navigate = useNavigate(); // ✅ Initialize navigation
+  const [username, setUsername] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
 
-  // Scroll hide/show effect
+  // ===== Scroll hide/show effect =====
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       setIsVisible(currentScrollY < lastScrollY || currentScrollY < 10);
       setLastScrollY(currentScrollY);
     };
-
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
 
-  // Update unread notifications count
+  // ===== Notifications badge =====
   useEffect(() => {
     const unread = notifications.filter((n) => !n.read).length;
     setUnreadCount(unread);
   }, [notifications]);
+
+  // ===== Detect login state and username =====
+  const checkAuth = () => {
+    const admin = localStorage.getItem("adminToken");
+    const vendor = localStorage.getItem("vendorToken");
+    const rider = localStorage.getItem("riderToken");
+    const customer = localStorage.getItem("customerToken");
+
+    const user =
+      localStorage.getItem("adminName") ||
+      localStorage.getItem("vendorName") ||
+      localStorage.getItem("riderName") ||
+      localStorage.getItem("customerName");
+
+    if (admin || vendor || rider || customer) {
+      setIsLoggedIn(true);
+      setUsername(user || "User");
+    } else {
+      setIsLoggedIn(false);
+      setUsername("");
+    }
+  };
+
+  useEffect(() => {
+    checkAuth();
+
+    // React instantly to login/logout from anywhere
+    const unsubscribe = listenAuthChange(checkAuth);
+
+    // Also detect manual localStorage changes
+    window.addEventListener("storage", checkAuth);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener("storage", checkAuth);
+    };
+  }, []);
 
   return (
     <motion.nav
@@ -43,7 +82,7 @@ export default function Navbar({ isLoggedIn, notifications = [] }) {
       }}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3">
-        {/* Logo */}
+        {/* ===== Logo ===== */}
         <Link to="/" className="flex items-center space-x-2">
           <motion.img
             src={logowhite}
@@ -53,9 +92,9 @@ export default function Navbar({ isLoggedIn, notifications = [] }) {
           />
         </Link>
 
-        {/* Right controls */}
+        {/* ===== Right controls ===== */}
         <div className="flex items-center space-x-4">
-          {/* Notifications only for logged-in users */}
+          {/* Notifications for logged-in users */}
           {isLoggedIn && (
             <Badge count={unreadCount} offset={[-5, 5]}>
               <Button
@@ -66,8 +105,21 @@ export default function Navbar({ isLoggedIn, notifications = [] }) {
             </Badge>
           )}
 
-          {/* Login button only if NOT logged in */}
-          {!isLoggedIn && (
+          {/* Username or Login button */}
+          {isLoggedIn ? (
+            <Button
+              icon={<UserOutlined />}
+              className="font-semibold rounded-full transition-all duration-300"
+              style={{
+                backgroundColor: "#FFCF71",
+                color: "#333",
+                border: "none",
+                padding: "0.6rem 1.2rem",
+              }}
+            >
+              {username}
+            </Button>
+          ) : (
             <motion.div
               initial={{ y: 0 }}
               animate={{ y: [0, -8, 0, -4, 0] }}
@@ -97,7 +149,7 @@ export default function Navbar({ isLoggedIn, notifications = [] }) {
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = "#008BE0";
                   }}
-                  onClick={() => navigate("/login")} // ✅ Navigate to Login page
+                  onClick={() => navigate("/login")}
                 >
                   Login
                 </Button>
