@@ -5,6 +5,7 @@ import "./index.css";
 import App from "./App.jsx";
 import { ErrorBoundary } from "react-error-boundary";
 import ErrorFallback from "./pages/error/ErrorFallback.jsx";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 // Render app
 createRoot(document.getElementById("root")).render(
@@ -14,7 +15,9 @@ createRoot(document.getElementById("root")).render(
         FallbackComponent={ErrorFallback}
         onReset={() => window.location.reload()}
       >
-        <App />
+       <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID">
+  <App />
+</GoogleOAuthProvider>
       </ErrorBoundary>
     </BrowserRouter>
   </StrictMode>
