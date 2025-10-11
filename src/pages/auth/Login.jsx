@@ -194,6 +194,7 @@ export default function Login() {
                 />
                 Remember me
               </label>
+              
               <span
                 onClick={() => navigate("/register")}
                 className="text-blue-600 cursor-pointer hover:underline"
@@ -201,6 +202,11 @@ export default function Login() {
                 Create Account
               </span>
             </div>
+            <div className="text-right mt-2">
+  <a href="/forgot-password" className="text-blue-500 hover:underline">
+    Forgot Password?
+  </a>
+</div>
             <Button
               label={loading ? "Logging in..." : "Login"}
               variant="primary"
@@ -208,6 +214,8 @@ export default function Login() {
               type="submit"
               disabled={loading}
             />
+            
+
           </form>
         )}
 

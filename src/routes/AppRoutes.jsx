@@ -19,6 +19,7 @@ import Sitemap from "../pages/legal/Sitemap";
 // ===== Auth Pages =====
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
+import ForgotPassword from "../pages/auth/ForgetPassword";
 import NotFound from "../pages/NotFound";
 import Unauthorized from "../pages/Unauthorized";
 
@@ -74,6 +75,7 @@ export default function AppRoutes() {
       {/* Auth Routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
 
       {/* Protected Routes */}
       <Route element={<ProtectedRoute allowedRoles={["Customer", "User"]} />}>
