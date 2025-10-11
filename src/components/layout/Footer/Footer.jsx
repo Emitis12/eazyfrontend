@@ -1,6 +1,7 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { FaFacebookF, FaTwitter, FaInstagram } from "react-icons/fa";
-import logoSrc from "../../assets/logoblue.png"; // replace with your logo path
+import logoSrc from "../../../assets/logoblue.png";
 
 export default function Footer() {
   return (
@@ -12,7 +13,7 @@ export default function Footer() {
           <div className="space-y-4">
             <img src={logoSrc} alt="Eazy Software Logo" className="h-10" />
             <p className="text-sm">
-              Fast, Fresh, Eazy - Delivering Happiness To Your Yoor.
+              Fast, Fresh, Eazy — Delivering Happiness To Your Door.
             </p>
           </div>
 
@@ -20,10 +21,10 @@ export default function Footer() {
           <div>
             <h3 className="text-sm font-semibold text-white mb-4">Company</h3>
             <ul className="space-y-2 text-sm">
-              <li><a href="/about" className="hover:text-white">About Us</a></li>
-              <li><a href="/careers" className="hover:text-white">Careers</a></li>
-              <li><a href="/vendors" className="hover:text-white">Become a Vendor</a></li>
-              <li><a href="/riders" className="hover:text-white">Join as a Rider</a></li>
+              <li><Link to="/about" className="hover:text-white">About Us</Link></li>
+              <li><Link to="/careers" className="hover:text-white">Careers</Link></li>
+              <li><Link to="/vendors" className="hover:text-white">Become a Vendor</Link></li>
+              <li><Link to="/riders" className="hover:text-white">Join as a Rider</Link></li>
             </ul>
           </div>
 
@@ -31,10 +32,10 @@ export default function Footer() {
           <div>
             <h3 className="text-sm font-semibold text-white mb-4">Support</h3>
             <ul className="space-y-2 text-sm">
-              <li><a href="/help" className="hover:text-white">Help Center</a></li>
-              <li><a href="/faq" className="hover:text-white">FAQs</a></li>
-              <li><a href="/contact" className="hover:text-white">Contact Us</a></li>
-              <li><a href="/track" className="hover:text-white">Track Order</a></li>
+              <li><Link to="/help" className="hover:text-white">Help Center</Link></li>
+              <li><Link to="/faq" className="hover:text-white">FAQs</Link></li>
+              <li><Link to="/contact" className="hover:text-white">Contact Us</Link></li>
+              <li><Link to="/track" className="hover:text-white">Track Order</Link></li>
             </ul>
           </div>
 
@@ -42,17 +43,19 @@ export default function Footer() {
           <div>
             <h3 className="text-sm font-semibold text-white mb-4">Legal</h3>
             <ul className="space-y-2 text-sm">
-              <li><a href="/terms" className="hover:text-white">Terms & Conditions</a></li>
-              <li><a href="/privacy" className="hover:text-white">Privacy Policy</a></li>
-              <li><a href="/cookies" className="hover:text-white">Cookie Policy</a></li>
+              <li><Link to="/terms" className="hover:text-white">Terms & Conditions</Link></li>
+              <li><Link to="/privacy" className="hover:text-white">Privacy Policy</Link></li>
+              <li><Link to="/cookies" className="hover:text-white">Cookie Policy</Link></li>
+              <li><Link to="/sitemap" className="hover:text-white">Sitemap</Link></li>
             </ul>
 
+            {/* Social Icons */}
             <div className="mt-6 flex space-x-4">
               <a
                 href="https://facebook.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-white"
+                className="hover:text-[#008BE0] transition-colors"
               >
                 <FaFacebookF className="h-5 w-5" />
               </a>
@@ -60,7 +63,7 @@ export default function Footer() {
                 href="https://twitter.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-white"
+                className="hover:text-[#008BE0] transition-colors"
               >
                 <FaTwitter className="h-5 w-5" />
               </a>
@@ -68,7 +71,7 @@ export default function Footer() {
                 href="https://instagram.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-white"
+                className="hover:text-[#008BE0] transition-colors"
               >
                 <FaInstagram className="h-5 w-5" />
               </a>
@@ -80,9 +83,10 @@ export default function Footer() {
         <div className="mt-12 border-t border-gray-700 pt-6 text-xs text-gray-500 flex flex-col md:flex-row justify-between items-center">
           <p>© {new Date().getFullYear()} Eazy Software. All rights reserved.</p>
           <div className="space-x-4 mt-4 md:mt-0">
-            <a href="/privacy" className="hover:text-gray-300">Privacy</a>
-            <a href="/terms" className="hover:text-gray-300">Terms</a>
-            <a href="/sitemap" className="hover:text-gray-300">Sitemap</a>
+            <Link to="/privacy" className="hover:text-gray-300">Privacy</Link>
+            <Link to="/terms" className="hover:text-gray-300">Terms</Link>
+            <Link to="/cookies" className="hover:text-gray-300">Cookies</Link>
+            <Link to="/sitemap" className="hover:text-gray-300">Sitemap</Link>
           </div>
         </div>
       </div>
