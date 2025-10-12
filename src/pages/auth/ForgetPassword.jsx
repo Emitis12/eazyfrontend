@@ -2,11 +2,14 @@ import React, { useState } from "react";
 import { Form, Input, Button, Typography, message } from "antd";
 import { motion } from "framer-motion";
 import { ApiHelper } from "../../utils/api";
+import { useNavigate } from "react-router-dom";
+import bgImage from "../../assets/disp.jpeg"; // ✅ Add your background image here
 
 const { Title, Text } = Typography;
 
 export default function ForgotPassword() {
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (values) => {
     setLoading(true);
@@ -21,12 +24,19 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-b from-blue-50 to-white px-4">
+    <div
+      className="relative flex justify-center items-center min-h-screen bg-cover bg-center px-4"
+      style={{ backgroundImage: `url(${bgImage})` }}
+    >
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-opacity-30"></div>
+
+      {/* Content */}
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md"
+        className="relative z-10 bg-white/90 backdrop-blur-md shadow-2xl rounded-2xl p-8 w-full max-w-md"
       >
         <Title level={2} className="text-center text-blue-600 mb-2">
           Forgot Password
@@ -58,10 +68,10 @@ export default function ForgotPassword() {
           </Button>
         </Form>
 
-        <div className="text-center mt-6">
-          <a href="/login" className="text-blue-500 hover:underline">
-            Back to Login
-          </a>
+        <div
+        onClick={() => navigate("/login")}
+        className="text-center mt-6 cursor-pointer text-blue-500 hover:underline">
+          Back to Login
         </div>
       </motion.div>
     </div>

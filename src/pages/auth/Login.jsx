@@ -7,7 +7,8 @@ import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import { notifyAuthChange } from "../../utils/authEvents";
 import { GoogleLogin } from "@react-oauth/google";
-import { jwtDecode } from "jwt-decode";
+import { jwtDecode } from "jwt-decode"; // ✅ fixed import
+import Loginimg from "../../assets/logimg.png";
 
 export default function Login() {
   const [form, setForm] = useState({
@@ -121,8 +122,17 @@ export default function Login() {
   ];
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-50 p-4">
-      <div className="bg-white/90 backdrop-blur-md shadow-2xl rounded-2xl p-8 w-full max-w-md space-y-6 transition-transform duration-300 hover:scale-[1.02]">
+     <div
+      className="relative flex items-center justify-center min-h-screen bg-cover bg-center p-4"
+      style={{
+        backgroundImage: `url(${Loginimg})`, // ✅ dynamic background
+      }}
+    >
+      {/* Overlay for better readability */}
+      <div className="absolute inset-0 bg-black/40"></div>
+
+      {/* Login Card */}
+      <div className="relative bg-white/90 backdrop-blur-md shadow-2xl rounded-2xl p-8 w-full max-w-md space-y-6 transition-transform duration-300 hover:scale-[1.02]">
         <h2 className="text-3xl font-extrabold text-center text-blue-600">
           Welcome to Eazy
         </h2>
@@ -194,7 +204,7 @@ export default function Login() {
                 />
                 Remember me
               </label>
-              
+
               <span
                 onClick={() => navigate("/register")}
                 className="text-blue-600 cursor-pointer hover:underline"
@@ -202,11 +212,14 @@ export default function Login() {
                 Create Account
               </span>
             </div>
-            <div className="text-right mt-2">
-  <a href="/forgot-password" className="text-blue-500 hover:underline">
-    Forgot Password?
-  </a>
-</div>
+
+            <div
+            onClick={() => navigate("/forgot-password")}
+            className="text-blue-500 cursor-pointer text-right mt-2 hover:underline"
+            >
+              Forget Password?
+            </div>
+
             <Button
               label={loading ? "Logging in..." : "Login"}
               variant="primary"
@@ -214,8 +227,6 @@ export default function Login() {
               type="submit"
               disabled={loading}
             />
-            
-
           </form>
         )}
 

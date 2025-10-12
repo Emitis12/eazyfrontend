@@ -5,21 +5,92 @@ import { notify } from "../../components/common/Notification";
 import { useNavigate } from "react-router-dom";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
+import RegImg from "../../assets/regimg.jpeg";
+import { GoogleLogin } from "@react-oauth/google";
+import { FaWhatsapp, FaGoogle, FaCheckCircle } from "react-icons/fa";
 
 export default function Register() {
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    role: "customer",
-  });
   const navigate = useNavigate();
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const [form, setForm] = useState({
+    role: "customer",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    whatsapp: "",
+    countryCode: "+234",
+    password: "",
+    verifyPassword: "",
+    businessType: "",
+    city: "",
+    vehicle: "",
+    privacyAccepted: false,
+    updatesAccepted: false,
+    otp: "",
+  });
+
+  const [errors, setErrors] = useState({});
+  const [step, setStep] = useState(1);
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loginMethod, setLoginMethod] = useState("whatsapp");
+
+  // ---------- VALIDATION ----------
+  const validateField = (name, value) => {
+    switch (name) {
+      case "firstName":
+      case "lastName":
+        return value.trim() ? "" : "This field is required";
+      case "email":
+        return /^\S+@\S+\.\S+$/.test(value) ? "" : "Invalid email address";
+      case "phone":
+      case "whatsapp":
+        return value.trim() ? "" : "Phone number is required";
+      case "password":
+        return value.length >= 6 ? "" : "Password must be at least 6 characters";
+      case "verifyPassword":
+        return value === form.password ? "" : "Passwords do not match";
+      case "businessType":
+      case "city":
+      case "vehicle":
+        return value ? "" : "This field is required";
+      case "privacyAccepted":
+        return value ? "" : "You must accept the privacy policy";
+      default:
+        return "";
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    const fieldValue = type === "checkbox" ? checked : value;
+    setForm({ ...form, [name]: fieldValue });
+
+    setErrors((prev) => ({
+      ...prev,
+      [name]: validateField(name, fieldValue),
+    }));
+  };
+
+  const isFilled = (fields) => fields.every((f) => !validateField(f, form[f]));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const allFields = Object.keys(form);
+    const newErrors = {};
+    allFields.forEach((f) => {
+      const err = validateField(f, form[f]);
+      if (err) newErrors[f] = err;
+    });
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      return notify.error("Please fix all errors before submitting");
+    }
+
     try {
       const res = await API.post("/auth/register", form);
       setAuthToken(form.role, res.data.token, true);
@@ -30,70 +101,332 @@ export default function Register() {
     }
   };
 
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-50 p-4">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white/90 backdrop-blur-md shadow-2xl rounded-2xl p-8 w-full max-w-md space-y-5 transition-transform duration-300 hover:scale-[1.02]"
-      >
-        <h2 className="text-3xl font-extrabold text-center text-blue-600">
-          Create Eazy Account
-        </h2>
+  // ---------- RENDER INPUT WITH CHECK ----------
+  const renderInputs = (fields) =>
+    fields.map(({ name, type, placeholder }) => {
+      const hasError = errors[name];
+      const isValid = !hasError && form[name];
+      return (
+        <div key={name} className="relative mb-2">
+          <Input
+            type={type}
+            name={name}
+            placeholder={placeholder}
+            value={form[name]}
+            onChange={handleChange}
+            required
+          />
+          {hasError && <div className="text-red-500 text-xs mt-1">{hasError}</div>}
+          {isValid && <FaCheckCircle className="absolute right-3 top-3 text-green-500 text-lg" />}
+        </div>
+      );
+    });
+
+  // ---------- CHECKBOX WITH CHECK ----------
+  const Checkbox = ({ name, label }) => {
+    const hasError = errors[name];
+    const isValid = !hasError && form[name];
+    return (
+      <label className="flex items-center space-x-2 text-sm text-gray-700 relative">
+        <input
+          type="checkbox"
+          name={name}
+          checked={form[name]}
+          onChange={handleChange}
+          className="w-4 h-4"
+        />
+        <span>{label}</span>
+        {hasError && <div className="text-red-500 text-xs mt-1 absolute -bottom-5">{hasError}</div>}
+        {isValid && <FaCheckCircle className="text-green-500 text-sm ml-2" />}
+      </label>
+    );
+  };
+
+  // ---------- CUSTOMER FORM ----------
+  const CustomerForm = () => {
+    const countryCodes = [
+      { code: "+234", label: "🇳🇬" },
+      { code: "+233", label: "🇬🇭" },
+      { code: "+44", label: "🇬🇧" },
+      { code: "+1", label: "🇺🇸" },
+    ];
+
+    const handleWhatsAppLogin = async () => {
+      if (!form.whatsapp) return notify.error("Enter WhatsApp number first.");
+      setLoading(true);
+      try {
+        await API.post("/auth/send-otp", { phone: `${form.countryCode}${form.whatsapp}` });
+        setOtpSent(true);
+        notify.success("OTP sent to your WhatsApp!");
+      } catch {
+        notify.error("Failed to send OTP");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const handleVerifyOtp = async () => {
+      if (!form.otp) return notify.error("Enter OTP first.");
+      setLoading(true);
+      try {
+        await API.post("/auth/verify-otp", { phone: `${form.countryCode}${form.whatsapp}`, otp: form.otp });
+        notify.success("OTP verified! Welcome to Eazy.");
+        navigate("/customer/dashboard");
+      } catch {
+        notify.error("Invalid OTP, please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const handleGoogleSuccess = () => {
+      notify.success("Google login successful!");
+      navigate("/customer/dashboard");
+    };
+
+    const handleGoogleError = () => notify.error("Google login failed.");
+
+    const emailFields = ["firstName","lastName","email","phone","password","verifyPassword"];
+
+    return (
+      <>
+        {!showEmailForm && !otpSent && (
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => setLoginMethod("whatsapp")}
+              type="button"
+              className={`flex items-center justify-center gap-2 w-1/2 py-3 rounded-lg font-semibold shadow-md transition-all ${loginMethod === "whatsapp" ? "bg-green-600 text-white hover:bg-green-700" : "bg-gray-100 text-gray-700 hover:bg-green-100"}`}
+            >
+              <FaWhatsapp className="text-xl" /> WhatsApp
+            </button>
+            <button
+              onClick={() => setLoginMethod("google")}
+              type="button"
+              className={`flex items-center justify-center gap-2 w-1/2 py-3 rounded-lg font-semibold shadow-md transition-all ${loginMethod === "google" ? "bg-[#4285F4] text-white hover:bg-[#357AE8]" : "bg-gray-100 text-gray-700 hover:bg-blue-100"}`}
+            >
+              <FaGoogle className="text-lg" /> Google
+            </button>
+          </div>
+        )}
+
+        {loginMethod === "whatsapp" && !showEmailForm && (
+          <div className="space-y-5 mt-5">
+            {!otpSent ? (
+              <>
+                <div className="flex gap-2 relative">
+                  <select
+                    name="countryCode"
+                    value={form.countryCode}
+                    onChange={handleChange}
+                    className="w-1/3 border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-green-400"
+                  >
+                    {countryCodes.map((c) => (
+                      <option key={c.code} value={c.code}>{c.label} {c.code}</option>
+                    ))}
+                  </select>
+                  <Input
+                    type="text"
+                    name="whatsapp"
+                    placeholder="WhatsApp Number"
+                    value={form.whatsapp}
+                    onChange={handleChange}
+                    className="w-2/3"
+                  />
+                  {!errors.whatsapp && form.whatsapp && <FaCheckCircle className="text-green-500 text-lg absolute right-4 top-3" />}
+                </div>
+                {errors.whatsapp && <div className="text-red-500 text-xs">{errors.whatsapp}</div>}
+                <Button
+                  label={loading ? "Sending OTP..." : "Send OTP"}
+                  onClick={handleWhatsAppLogin}
+                  disabled={!form.whatsapp || loading || errors.whatsapp}
+                  className={`w-full py-3 rounded-lg font-semibold ${(!form.whatsapp || errors.whatsapp) ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-green-600 text-white hover:bg-green-700"}`}
+                  type="button"
+                />
+              </>
+            ) : (
+              <>
+                <Input
+                  type="text"
+                  name="otp"
+                  placeholder="Enter OTP"
+                  value={form.otp}
+                  onChange={handleChange}
+                />
+                <Button
+                  label={loading ? "Verifying..." : "Verify OTP"}
+                  onClick={handleVerifyOtp}
+                  disabled={!form.otp || loading}
+                  className={`w-full py-3 rounded-lg font-semibold ${!form.otp ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-green-600 text-white hover:bg-green-700"}`}
+                  type="button"
+                />
+              </>
+            )}
+          </div>
+        )}
+
+        {loginMethod === "google" && !showEmailForm && (
+          <div className="flex justify-center mt-5">
+            <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError} size="large" theme="filled_blue" />
+          </div>
+        )}
+
+        {!showEmailForm && (
+          <Button
+            label="Register with Email"
+            className="w-full bg-[#008BE0] hover:bg-blue-700 text-white rounded-lg py-3 font-semibold mt-5"
+            onClick={() => setShowEmailForm(true)}
+            type="button"
+          />
+        )}
+
+        {showEmailForm && (
+          <>
+            <div className="flex gap-2">
+              {renderInputs([
+                { name: "firstName", type: "text", placeholder: "First Name" },
+                { name: "lastName", type: "text", placeholder: "Last Name" },
+              ])}
+            </div>
+            {renderInputs([
+              { name: "email", type: "email", placeholder: "Email Address" },
+              { name: "phone", type: "tel", placeholder: "Phone Number" },
+              { name: "password", type: "password", placeholder: "Password" },
+              { name: "verifyPassword", type: "password", placeholder: "Verify Password" },
+            ])}
+
+            <Button
+              label="Sign Up"
+              type="submit"
+              disabled={!isFilled(["firstName","lastName","email","phone","password","verifyPassword"])}
+              className={`w-full py-3 rounded-lg font-semibold ${!isFilled(["firstName","lastName","email","phone","password","verifyPassword"]) ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-[#008BE0] text-white hover:bg-blue-700"}`}
+            />
+          </>
+        )}
+      </>
+    );
+  };
+
+  // ---------- VENDOR FORM ----------
+  const VendorForm = () => {
+    const fields = ["firstName","lastName","businessType","phone","email","password","verifyPassword"];
+    return (
+      <>
+        <div className="flex gap-2">{renderInputs([{name:"firstName",type:"text",placeholder:"First Name"},{name:"lastName",type:"text",placeholder:"Last Name"}])}</div>
 
         <select
-          name="role"
-          value={form.role}
+          name="businessType"
+          value={form.businessType}
           onChange={handleChange}
-          className="w-full border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-400"
+          required
+          className="w-full border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-400 relative"
         >
+          <option value="">Select Business Type</option>
+          <option value="restaurant">Restaurant</option>
+          <option value="food_vendor">Food Vendor</option>
+          <option value="catering">Catering</option>
+          <option value="bakery">Bakery</option>
+        </select>
+        {!errors.businessType && form.businessType && <FaCheckCircle className="text-green-500 absolute right-3 top-3"/>}
+        {errors.businessType && <div className="text-red-500 text-xs">{errors.businessType}</div>}
+
+        <div className="flex gap-2">{renderInputs([{name:"phone",type:"tel",placeholder:"Phone Number"},{name:"email",type:"email",placeholder:"Business Email"}])}</div>
+        {renderInputs([{name:"password",type:"password",placeholder:"Password"},{name:"verifyPassword",type:"password",placeholder:"Verify Password"}])}
+
+        <Checkbox name="updatesAccepted" label="I'd like updates via WhatsApp or email" />
+        <Checkbox name="privacyAccepted" label={<span>I accept the <a href="/privacy-policy" className="text-[#008BE0] hover:underline font-semibold">Privacy Policy</a></span>} />
+
+        <Button label="Register as Vendor" type="submit" className="w-full bg-[#008BE0] hover:bg-blue-700 text-white rounded-lg py-3 font-semibold" disabled={!isFilled(fields)} />
+      </>
+    );
+  };
+
+  // ---------- RIDER FORM ----------
+  const RiderForm = () => {
+    const steps = [
+      {
+        id: 1,
+        content: (
+          <>
+            <select name="city" value={form.city} onChange={handleChange} required className="w-full border-gray-300 rounded-lg p-3">
+              <option value="">Select City</option>
+              {["Lagos", "Abuja", "Port Harcourt", "Ibadan"].map((city) => (<option key={city}>{city}</option>))}
+            </select>
+            {!errors.city && form.city && <FaCheckCircle className="text-green-500 absolute right-3 top-3"/>}
+            {errors.city && <div className="text-red-500 text-xs">{errors.city}</div>}
+            <Button label="Next" onClick={()=>setStep(2)} className="w-full bg-[#008BE0] text-white py-2 rounded-lg text-sm mt-3" type="button"/>
+          </>
+        ),
+      },
+      {
+        id:2,
+        content: (
+          <>
+            <select name="vehicle" value={form.vehicle} onChange={handleChange} required className="w-full border-gray-300 rounded-lg p-3">
+              <option value="">Select Vehicle Type</option>
+              {["Motorbike", "Tricycle", "Car"].map(v=> (<option key={v}>{v}</option>))}
+            </select>
+            {!errors.vehicle && form.vehicle && <FaCheckCircle className="text-green-500 absolute right-3 top-3"/>}
+            {errors.vehicle && <div className="text-red-500 text-xs">{errors.vehicle}</div>}
+            <div className="flex justify-between gap-3 mt-3">
+              <Button label="Back" onClick={()=>setStep(1)} className="w-1/2 bg-gray-300 text-gray-700 rounded-lg py-2 text-sm" type="button"/>
+              <Button label="Next" onClick={()=>setStep(3)} className="w-1/2 bg-[#008BE0] text-white rounded-lg py-2 text-sm" type="button"/>
+            </div>
+          </>
+        )
+      },
+      {
+        id:3,
+        content: (
+          <>
+            {renderInputs([
+              { name:"firstName", type:"text", placeholder:"First Name" },
+              { name:"lastName", type:"text", placeholder:"Last Name" },
+              { name:"email", type:"email", placeholder:"Email Address" },
+              { name:"password", type:"password", placeholder:"Password" },
+              { name:"verifyPassword", type:"password", placeholder:"Verify Password" },
+              { name:"phone", type:"tel", placeholder:"Phone Number" }
+            ])}
+            <div className="flex justify-between gap-3 mt-3">
+              <Button label="Back" onClick={()=>setStep(2)} className="w-1/2 bg-gray-300 text-gray-700 rounded-lg py-2 text-sm" type="button"/>
+              <Button label="Next" onClick={()=>setStep(4)} className="w-1/2 bg-[#008BE0] text-white rounded-lg py-2 text-sm" type="button"/>
+            </div>
+          </>
+        )
+      },
+      {
+        id:4,
+        content: (
+          <>
+            <Checkbox name="privacyAccepted" label={<span>I accept the <a href="/rider-privacy" className="text-[#008BE0] hover:underline font-semibold">Rider Privacy Statement</a></span>} />
+            <div className="border-2 border-gray-300 rounded-lg p-4 text-center text-gray-600 text-sm mt-2">✅ Verify with Cloudflare</div>
+            <div className="flex justify-between gap-3 mt-3">
+              <Button label="Back" onClick={()=>setStep(3)} className="w-1/2 bg-gray-300 text-gray-700 rounded-lg py-2 text-sm" type="button"/>
+              <Button label="Register as Rider" type="submit" className="w-1/2 bg-[#008BE0] text-white rounded-lg py-2 text-sm" disabled={!isFilled(["firstName","lastName","email","password","verifyPassword","phone","city","vehicle","privacyAccepted"])}/>
+            </div>
+          </>
+        )
+      }
+    ];
+
+    return steps.find(s=>s.id===step)?.content || null;
+  };
+
+  // ---------- MAIN RETURN ----------
+  return (
+    <div className="relative flex flex-col items-center justify-center min-h-screen bg-cover bg-center p-4" style={{ backgroundImage: `url(${RegImg})` }}>
+      <form onSubmit={handleSubmit} className="bg-white/90 backdrop-blur-md shadow-2xl rounded-2xl p-8 w-full max-w-md space-y-5 transition-transform duration-300 hover:scale-[1.02]">
+        <h2 className="text-3xl font-extrabold text-center text-[#008BE0]">Create Eazy Account</h2>
+        <div className="text-[#FFCF71] text-sm text-center">Choose your category</div>
+
+        <select name="role" value={form.role} onChange={(e)=>{ handleChange(e); setStep(1); setShowEmailForm(false); setOtpSent(false); }} className="w-full border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-400">
           <option value="customer">Customer</option>
           <option value="vendor">Vendor</option>
           <option value="rider">Rider</option>
         </select>
 
-        <Input
-          type="text"
-          name="name"
-          placeholder="Full Name"
-          value={form.name}
-          onChange={handleChange}
-          required
-        />
-
-        <Input
-          type="email"
-          name="email"
-          placeholder="Email Address"
-          value={form.email}
-          onChange={handleChange}
-          required
-        />
-
-        <Input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={form.password}
-          onChange={handleChange}
-          required
-        />
-
-        <Button
-          label="Sign Up"
-          variant="primary"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-3 font-semibold shadow-md transition-all"
-          type="submit"
-        />
-
-        <p className="text-center text-sm text-gray-500">
-          Already have an account?{" "}
-          <span
-            onClick={() => navigate("/login")}
-            className="text-blue-600 font-medium cursor-pointer hover:underline"
-          >
-            Login
-          </span>
-        </p>
+        {form.role === "customer" && <CustomerForm />}
+        {form.role === "vendor" && <VendorForm />}
+        {form.role === "rider" && <RiderForm />}
       </form>
     </div>
   );
