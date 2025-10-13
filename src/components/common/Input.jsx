@@ -1,71 +1,99 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, forwardRef } from "react";
 import { Input as AntInput } from "antd";
-import { notify } from "./Notification";
+import { EyeInvisibleOutlined, EyeOutlined } from "@ant-design/icons";
 
-/**
- * Premium Input component with validation, icons, and built-in notifications
- */
-export default function Input({
+// Use forwardRef to properly pass ref to AntInput
+const Input = forwardRef(({
   label,
   value,
   onChange,
   placeholder = "",
   type = "text",
   icon: Icon,
-  notifyType, // "success" | "error" | "info" | "warning"
-  notifyMsg,
   disabled = false,
   className = "",
   required = false,
   validate, // function: (value) => errorMessage | null
+  preventCopyPaste = false,
+  validateOnBlur = true, // true: validate on blur, false: validate on change
+  error: parentError, // parent-controlled error
   ...rest
-}) {
-  const [error, setError] = useState("");
+}, ref) => {
+  const [focused, setFocused] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [internalError, setInternalError] = useState("");
+
+  const inputType = type === "password" && showPassword ? "text" : type;
+
+  // Sync parent error
+  useEffect(() => {
+    setInternalError(parentError || "");
+  }, [parentError]);
 
   const handleChange = (e) => {
-    const newValue = e.target.value;
+    const val = e.target.value;
     onChange && onChange(e);
 
-    // Run validation if function provided
-    if (validate) {
-      const validationError = validate(newValue);
-      setError(validationError || "");
+    if (validate && !validateOnBlur) {
+      const err = validate(val) || "";
+      setInternalError(err);
     }
+  };
 
-    // Trigger notification if specified
-    if (notifyType && notifyMsg) {
-      notify[notifyType](notifyMsg.title, notifyMsg.desc);
+  const handleBlur = () => {
+    setFocused(false);
+    if (validate && validateOnBlur) {
+      const err = validate(value) || "";
+      setInternalError(err);
     }
   };
 
   return (
-    <div className={`flex flex-col gap-2 w-full ${className}`}>
+    <div className={`flex flex-col w-full relative ${className}`}>
       {label && (
-        <label className="text-sm font-medium text-gray-700">
+        <label
+          className={`absolute left-3 text-gray-500 text-sm transition-all pointer-events-none
+          ${focused || value ? "-top-2 text-xs text-[#008BE0]" : "top-3"}`}
+        >
           {label} {required && <span className="text-red-500">*</span>}
         </label>
       )}
 
-      <div className="relative">
-        {Icon && (
-          <Icon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
-        )}
+      <div className="relative w-full">
+        {Icon && <Icon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />}
+
         <AntInput
-          type={type}
+          ref={ref} // forward ref to AntInput
+          type={inputType}
           value={value}
           onChange={handleChange}
+          onFocus={() => setFocused(true)}
+          onBlur={handleBlur}
           placeholder={placeholder}
           disabled={disabled}
-          className={`pl-${Icon ? "10" : "4"} py-2.5 rounded-full border ${
-            error
-              ? "border-red-500 focus:border-red-500"
-              : "border-gray-300 focus:border-[#008BE0]"
+          className={`w-full py-2.5 outline-1 outline-gray-300 rounded-xl border px-3 ${
+            Icon ? "pl-10" : "pl-3"
+          } ${
+            internalError ? "border-red-500 focus:border-red-500" : "border-gray-300 focus:border-blue-500"
           } focus:shadow-md transition-all`}
+          onCopy={(e) => preventCopyPaste && e.preventDefault()}
+          onPaste={(e) => preventCopyPaste && e.preventDefault()}
           {...rest}
         />
+
+        {type === "password" && (
+          <span
+            className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-400"
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+          </span>
+        )}
       </div>
 
-      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+      {internalError && <p className="text-red-500 text-xs mt-1">{internalError}</p>}
     </div>
   );
-}
+});
+
+export default Input;
