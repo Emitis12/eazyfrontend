@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoutes";
 
 // ===== Landing Page Sections =====
@@ -22,6 +22,7 @@ import Register from "../pages/auth/Register";
 import ForgotPassword from "../pages/auth/ForgetPassword";
 import NotFound from "../pages/NotFound";
 import Unauthorized from "../pages/Unauthorized";
+import Onboarding from "../pages/onboarding/Onboarding";
 
 // ===== User Pages =====
 import UserDashboard from "../pages/user/Dashboard";
@@ -50,6 +51,10 @@ import Vendors from "../pages/admin/Vendors";
 import Riders from "../pages/admin/Riders";
 import Reports from "../pages/admin/Reports";
 
+// ===== Super Admin Pages =====
+import SuperAdminLogin from "../pages/superadmin/SuperAdminLogin";
+import SuperAdminDashboard from "../pages/superadmin/SuperAdminDashboard";
+
 export default function AppRoutes() {
   return (
     <Routes>
@@ -76,6 +81,10 @@ export default function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/onboarding" element={<Onboarding />} />
+
+      {/* 🧠 Super Admin Auth */}
+      <Route path="/superadmin/login" element={<SuperAdminLogin />} />
 
       {/* Protected Routes */}
       <Route element={<ProtectedRoute allowedRoles={["Customer", "User"]} />}>
@@ -107,6 +116,11 @@ export default function AppRoutes() {
         <Route path="/admin/vendors" element={<Vendors />} />
         <Route path="/admin/riders" element={<Riders />} />
         <Route path="/admin/reports" element={<Reports />} />
+      </Route>
+
+      {/* 🧑‍💼 Super Admin Protected Area */}
+      <Route element={<ProtectedRoute allowedRoles={["SuperAdmin"]} />}>
+        <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
       </Route>
 
       {/* Misc */}

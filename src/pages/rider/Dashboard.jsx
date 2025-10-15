@@ -27,9 +27,19 @@ export default function Dashboard({ riderId, isLoggedIn }) {
   const [incomingOrder, setIncomingOrder] = useState(null);
   const [timeLeft, setTimeLeft] = useState(10);
 
+  const [showTutorial, setShowTutorial] = useState(false); // First-time tutorial modal
   const socketRef = useRef(null);
   const countdownRef = useRef(null);
   const notificationSound = useRef(new Audio("/sounds/notification.mp3"));
+
+  // --- Check first-time rider for tutorial ---
+  useEffect(() => {
+    const firstTime = sessionStorage.getItem("firstTimeRider");
+    if (!firstTime) {
+      setShowTutorial(true);
+      sessionStorage.setItem("firstTimeRider", "seen");
+    }
+  }, []);
 
   // --- Socket Setup ---
   useEffect(() => {
@@ -214,6 +224,26 @@ export default function Dashboard({ riderId, isLoggedIn }) {
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
                 <Button className="w-full sm:w-auto" label="Accept" onClick={handleAcceptOrder} variant="success" />
                 <Button className="w-full sm:w-auto" label="Reject" onClick={handleRejectOrder} variant="danger" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* First-Time Rider Tutorial Modal */}
+        {showTutorial && (
+          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 sm:p-6">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 sm:p-8 relative animate-fadeIn">
+              <h2 className="text-2xl font-bold mb-4 text-center">Welcome to Your Dashboard!</h2>
+              <p className="text-gray-700 mb-4">Watch this quick tutorial to get started.</p>
+              <div className="aspect-video mb-4">
+                <video controls className="w-full h-full rounded-lg">
+                  <source src="/videos/rider_tutorial.mp4" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button label="Skip" onClick={() => setShowTutorial(false)} variant="secondary" />
+                <Button label="Close" onClick={() => setShowTutorial(false)} variant="primary" />
               </div>
             </div>
           </div>

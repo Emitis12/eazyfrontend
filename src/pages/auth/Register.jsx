@@ -1,463 +1,496 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import Input from "../../components/common/Input";
+import Button from "../../components/common/Button";
+import RegBg from "../../assets/logimg.png";
 import API from "../../utils/api";
 import { setAuthToken } from "../../utils/auth";
 import { notify } from "../../components/common/Notification";
 import { useNavigate } from "react-router-dom";
-import Button from "../../components/common/Button";
-import Input from "../../components/common/Input";
-import RegImg from "../../assets/regimg.jpeg";
 import { GoogleLogin } from "@react-oauth/google";
 import { FaWhatsapp, FaGoogle, FaCheckCircle } from "react-icons/fa";
 
+const Link = ({ href, children }) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noreferrer"
+    className="text-indigo-500 underline hover:text-indigo-700 transition-colors"
+  >
+    {children}
+  </a>
+);
+
 export default function Register() {
   const navigate = useNavigate();
+  const [role, setRole] = useState("customer");
+  const [submitting, setSubmitting] = useState(false);
+  const [fade, setFade] = useState(false);
 
-  const [form, setForm] = useState({
-    role: "customer",
+  const [registerMethod, setRegisterMethod] = useState("email");
+  const [waCountryCode, setWaCountryCode] = useState("+234");
+  const [waPhone, setWaPhone] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpValue, setOtpValue] = useState("");
+  const [timer, setTimer] = useState(0);
+
+  const [rider, setRider] = useState({
+    city: "",
+    vehicle: "",
     firstName: "",
     lastName: "",
     email: "",
-    phone: "",
-    whatsapp: "",
-    countryCode: "+234",
     password: "",
     verifyPassword: "",
+    phone: "",
+    accepted: false,
+  });
+  const [vendor, setVendor] = useState({
+    firstName: "",
+    lastName: "",
     businessType: "",
+    phone: "",
+    businessEmail: "",
+    password: "",
+    verifyPassword: "",
+    accepted: false,
+  });
+  const [customer, setCustomer] = useState({
     city: "",
-    vehicle: "",
-    privacyAccepted: false,
-    updatesAccepted: false,
-    otp: "",
+    firstName: "",
+    lastName: "",
+    phone: "",
+    password: "",
+    verifyPassword: "",
+    acceptedTerms: false,
   });
 
-  const [errors, setErrors] = useState({});
-  const [touched, setTouched] = useState({});
-  const [step, setStep] = useState(1);
-  const [showEmailForm, setShowEmailForm] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [loginMethod, setLoginMethod] = useState("whatsapp");
+  const cities = ["Lagos", "Abuja", "Port Harcourt", "Kano"];
+  const vehicles = ["Bicycle", "Motorbike", "Car", "Tricycle (Keke)"];
+  const businessTypes = ["Restaurant", "Grocery", "Pharmacy", "Retail"];
 
-  // ---------- VALIDATION ----------
-  const validateField = (name, value) => {
-    switch (name) {
-      case "firstName":
-      case "lastName":
-        return value.trim() ? "" : "This field is required";
-      case "email":
-        return /^\S+@\S+\.\S+$/.test(value) ? "" : "Invalid email address";
-      case "phone":
-      case "whatsapp":
-        return value.trim() ? "" : "Phone number is required";
-      case "password":
-        return value.length >= 6 ? "" : "Password must be at least 6 characters";
-      case "verifyPassword":
-        return value === form.password ? "" : "Passwords do not match";
-      case "businessType":
-      case "city":
-      case "vehicle":
-        return value ? "" : "This field is required";
-      case "privacyAccepted":
-        return value ? "" : "You must accept the privacy policy";
-      default:
-        return "";
-    }
-  };
+  const schemas = useMemo(
+    () => ({
+      rider: [
+        { key: "city", type: "select", label: "Select city", options: cities },
+        { key: "vehicle", type: "select", label: "Select vehicle", options: vehicles },
+        {
+          key: "nameRow",
+          type: "inline",
+          fields: [
+            { key: "firstName", type: "text", placeholder: "First name" },
+            { key: "lastName", type: "text", placeholder: "Last name" },
+          ],
+        },
+        { key: "email", type: "email", placeholder: "Email" },
+        {
+          key: "passwordRow",
+          type: "inline",
+          fields: [
+            { key: "password", type: "password", placeholder: "Password" },
+            { key: "verifyPassword", type: "password", placeholder: "Verify password" },
+          ],
+        },
+        { key: "phone", type: "tel", placeholder: "Phone number" },
+      ],
+      vendor: [
+        {
+          key: "nameRow",
+          type: "inline",
+          fields: [
+            { key: "firstName", type: "text", placeholder: "First name" },
+            { key: "lastName", type: "text", placeholder: "Last name" },
+          ],
+        },
+        { key: "businessType", type: "select", label: "Choose business type", options: businessTypes },
+        { key: "phone", type: "tel", placeholder: "Phone number" },
+        { key: "businessEmail", type: "email", placeholder: "Business email" },
+        {
+          key: "passwordRow",
+          type: "inline",
+          fields: [
+            { key: "password", type: "password", placeholder: "Password" },
+            { key: "verifyPassword", type: "password", placeholder: "Verify password" },
+          ],
+        },
+      ],
+      customerEmail: [
+        { key: "city", type: "select", label: "Select city", options: cities },
+        {
+          key: "nameRow",
+          type: "inline",
+          fields: [
+            { key: "firstName", type: "text", placeholder: "First name" },
+            { key: "lastName", type: "text", placeholder: "Last name" },
+          ],
+        },
+        { key: "phone", type: "tel", placeholder: "Phone number" },
+        {
+          key: "passwordRow",
+          type: "inline",
+          fields: [
+            { key: "password", type: "password", placeholder: "Password" },
+            { key: "verifyPassword", type: "password", placeholder: "Verify password" },
+          ],
+        },
+      ],
+    }),
+    [cities, vehicles, businessTypes]
+  );
 
-  // ---------- HANDLE CHANGE ----------
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    const fieldValue = type === "checkbox" ? checked : value;
+  useEffect(() => {
+    setFade(true);
+    const timer = setTimeout(() => setFade(false), 400);
+    return () => clearTimeout(timer);
+  }, [role, registerMethod]);
 
-    setForm((prev) => ({ ...prev, [name]: fieldValue }));
+  useEffect(() => {
+    let timerId = null;
+    if (timer > 0) timerId = setTimeout(() => setTimer((t) => t - 1), 1000);
+    return () => clearTimeout(timerId);
+  }, [timer]);
 
-    // Only validate checkbox live
-    if (type === "checkbox") {
-      setErrors((prev) => ({ ...prev, [name]: validateField(name, fieldValue) }));
-    }
-  };
+  const change = (setter) => (key, value) => setter((prev) => ({ ...prev, [key]: value }));
+  const handleRiderChange = change(setRider);
+  const handleVendorChange = change(setVendor);
+  const handleCustomerChange = change(setCustomer);
 
-  // ---------- HANDLE BLUR ----------
-  const handleBlur = (e) => {
-    const { name, value, type, checked } = e.target;
-    const fieldValue = type === "checkbox" ? checked : value;
+  const isRiderValid =
+    Object.values(rider).every((v) => v !== "") && rider.password === rider.verifyPassword && rider.accepted;
+  const isVendorValid =
+    Object.values(vendor).every((v) => v !== "") && vendor.password === vendor.verifyPassword && vendor.accepted;
+  const isCustomerValid =
+    Object.values(customer).every((v) => v !== "") &&
+    customer.password === customer.verifyPassword &&
+    customer.acceptedTerms;
 
-    setTouched((prev) => ({ ...prev, [name]: true }));
-    setErrors((prev) => ({ ...prev, [name]: validateField(name, fieldValue) }));
-  };
+  const renderField = ({ type, key, label, placeholder, options }, value, onChange) => {
+    const commonProps = {
+      value: value || "",
+      onChange: (e) => onChange(key, e.target.value),
+      placeholder: placeholder || label || "",
+      id: key,
+    };
 
-  // ---------- SUBMIT ----------
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const allFields = Object.keys(form);
-    const newErrors = {};
-    allFields.forEach((f) => {
-      const err = validateField(f, form[f]);
-      if (err) newErrors[f] = err;
-    });
-    setErrors(newErrors);
-
-    if (Object.keys(newErrors).length > 0) {
-      return notify.error("Please fix all errors before submitting");
-    }
-
-    try {
-      const res = await API.post("/auth/register", form);
-      setAuthToken(form.role, res.data.token, true);
-      notify.success("Welcome to Eazy!");
-      navigate(`/${form.role}/dashboard`);
-    } catch (err) {
-      notify.error("Registration failed", err.response?.data?.message || "Try again");
-    }
-  };
-
-  // ---------- RENDER INPUT ----------
-  const renderInputs = (fields) =>
-    fields.map(({ name, type, placeholder }, index) => {
-      const hasError = errors[name];
-      const isValid = touched[name] && !hasError && form[name];
+    if (type === "select") {
       return (
-        <div key={name} className="relative mb-2">
-          <Input
-            type={type}
-            name={name}
-            placeholder={placeholder}
-            value={form[name]}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            required
-            autoFocus={index === 0} // ensure cursor stays active for first input
-          />
-          {hasError && <div className="text-red-500 text-xs mt-1">{hasError}</div>}
-          {isValid && <FaCheckCircle className="absolute right-3 top-3 text-green-500 text-lg" />}
+        <div className="w-full">
+          <label htmlFor={key} className="block text-sm font-medium text-gray-700 mb-1">
+            {label}
+          </label>
+          <select
+            {...commonProps}
+            className="w-full rounded-md border-gray-200 shadow-sm p-2 focus:ring-2 focus:ring-indigo-400"
+          >
+            <option value="">Select {label?.toLowerCase?.() || key}</option>
+            {options?.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        </div>
+      );
+    }
+    return <Input type={type} {...commonProps} className="w-full" />;
+  };
+
+  const renderSchema = (schema, data, onChange) =>
+    schema.map((field) => {
+      if (field.type === "inline") {
+        return (
+          <div key={field.key} className="flex flex-col sm:flex-row gap-3 w-full">
+            {field.fields.map((f) => (
+              <div key={f.key} className="flex-1">
+                {renderField(f, data[f.key], onChange)}
+              </div>
+            ))}
+          </div>
+        );
+      }
+      return (
+        <div key={field.key} className="w-full">
+          {renderField(field, data[field.key], onChange)}
         </div>
       );
     });
 
-  // ---------- CHECKBOX ----------
-  const Checkbox = ({ name, label }) => {
-    const hasError = errors[name];
-    const isValid = touched[name] && !hasError && form[name];
-    return (
-      <label className="flex items-center space-x-2 text-sm text-gray-700 relative">
-        <input
-          type="checkbox"
-          name={name}
-          checked={form[name]}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          className="w-4 h-4"
-        />
-        <span>{label}</span>
-        {hasError && <div className="text-red-500 text-xs mt-1 absolute -bottom-5">{hasError}</div>}
-        {isValid && <FaCheckCircle className="text-green-500 text-sm ml-2" />}
-      </label>
-    );
-  };
+  // ✅ handleSubmit with mail trigger added
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const payload = role === "rider" ? rider : role === "vendor" ? vendor : customer;
+      const res = await API.post(`/auth/register/${role}`, payload);
+      setAuthToken(role, res.data.token);
 
-  // ---------- CUSTOMER FORM ----------
-  const CustomerForm = () => {
-    const countryCodes = [
-      { code: "+234", label: "🇳🇬" },
-      { code: "+233", label: "🇬🇭" },
-      { code: "+44", label: "🇬🇧" },
-      { code: "+1", label: "🇺🇸" },
-    ];
-
-    const handleWhatsAppLogin = async () => {
-      if (!form.whatsapp) return notify.error("Enter WhatsApp number first.");
-      setLoading(true);
-      try {
-        await API.post("/auth/send-otp", { phone: `${form.countryCode}${form.whatsapp}` });
-        setOtpSent(true);
-        notify.success("OTP sent to your WhatsApp!");
-      } catch {
-        notify.error("Failed to send OTP");
-      } finally {
-        setLoading(false);
+      // ✅ Send mail trigger after successful registration
+      if (role === "rider" || role === "customer") {
+        try {
+          await API.post("/mail/send", {
+            to: payload.email || payload.businessEmail,
+            subject: "Eazy Registration Under Review",
+            body: `
+              <h3>Hello ${payload.firstName},</h3>
+              <p>Your registration is currently under review. Please wait for a verification mail before onboarding.</p>
+              <p>Thank you for joining <strong>Eazy</strong> — Fast, Fresh, Eazy!</p>
+            `,
+          });
+        } catch (mailErr) {
+          console.warn("Mail trigger failed:", mailErr);
+        }
       }
-    };
 
-    const handleVerifyOtp = async () => {
-      if (!form.otp) return notify.error("Enter OTP first.");
-      setLoading(true);
-      try {
-        await API.post("/auth/verify-otp", { phone: `${form.countryCode}${form.whatsapp}`, otp: form.otp });
-        notify.success("OTP verified! Welcome to Eazy.");
-        navigate("/customer/dashboard");
-      } catch {
-        notify.error("Invalid OTP, please try again.");
-      } finally {
-        setLoading(false);
+      notify(`Welcome ${payload.firstName || ""}!`, "success");
+      navigate("/dashboard");
+    } catch (err) {
+      notify(err?.response?.data?.message || "Registration failed", "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSendOtp = async () => {
+    try {
+      setOtpSent(true);
+      setTimer(60);
+      const fullPhone = `${waCountryCode}${waPhone}`;
+      const res = await API.post("/auth/send-otp", { phone: fullPhone });
+      notify("OTP sent to your WhatsApp!", "success");
+
+      if (res?.data?.token) {
+        setAuthToken("customer", res.data.token);
+        notify("Session refreshed automatically", "info");
       }
-    };
-
-    const handleGoogleSuccess = () => {
-      notify.success("Google login successful!");
-      navigate("/customer/dashboard");
-    };
-
-    const handleGoogleError = () => notify.error("Google login failed.");
-
-    return (
-      <>
-        {!showEmailForm && !otpSent && (
-          <div className="flex gap-3 justify-center">
-            <button
-              onClick={() => setLoginMethod("whatsapp")}
-              type="button"
-              className={`flex items-center justify-center gap-2 w-1/2 py-3 rounded-lg font-semibold shadow-md transition-all ${loginMethod === "whatsapp" ? "bg-green-600 text-white hover:bg-green-700" : "bg-gray-100 text-gray-700 hover:bg-green-100"}`}
-            >
-              <FaWhatsapp className="text-xl" /> WhatsApp
-            </button>
-            <button
-              onClick={() => setLoginMethod("google")}
-              type="button"
-              className={`flex items-center justify-center gap-2 w-1/2 py-3 rounded-lg font-semibold shadow-md transition-all ${loginMethod === "google" ? "bg-[#4285F4] text-white hover:bg-[#357AE8]" : "bg-gray-100 text-gray-700 hover:bg-blue-100"}`}
-            >
-              <FaGoogle className="text-lg" /> Google
-            </button>
-          </div>
-        )}
-
-        {loginMethod === "whatsapp" && !showEmailForm && (
-          <div className="space-y-5 mt-5">
-            {!otpSent ? (
-              <>
-                <div className="flex gap-2 relative">
-                  <select
-                    name="countryCode"
-                    value={form.countryCode}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className="w-1/3 border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-green-400"
-                  >
-                    {countryCodes.map((c) => (
-                      <option key={c.code} value={c.code}>{c.label} {c.code}</option>
-                    ))}
-                  </select>
-                  <Input
-                    type="text"
-                    name="whatsapp"
-                    placeholder="WhatsApp Number"
-                    value={form.whatsapp}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className="w-2/3"
-                    autoFocus
-                  />
-                  {touched.whatsapp && !errors.whatsapp && form.whatsapp && <FaCheckCircle className="text-green-500 text-lg absolute right-4 top-3" />}
-                </div>
-                {errors.whatsapp && <div className="text-red-500 text-xs">{errors.whatsapp}</div>}
-                <Button
-                  label={loading ? "Sending OTP..." : "Send OTP"}
-                  onClick={handleWhatsAppLogin}
-                  disabled={!form.whatsapp || loading || errors.whatsapp}
-                  className={`w-full py-3 rounded-lg font-semibold ${(!form.whatsapp || errors.whatsapp) ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-green-600 text-white hover:bg-green-700"}`}
-                  type="button"
-                />
-              </>
-            ) : (
-              <>
-                <Input
-                  type="text"
-                  name="otp"
-                  placeholder="Enter OTP"
-                  value={form.otp}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  autoFocus
-                />
-                <Button
-                  label={loading ? "Verifying..." : "Verify OTP"}
-                  onClick={handleVerifyOtp}
-                  disabled={!form.otp || loading}
-                  className={`w-full py-3 rounded-lg font-semibold ${!form.otp ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-green-600 text-white hover:bg-green-700"}`}
-                  type="button"
-                />
-              </>
-            )}
-          </div>
-        )}
-
-        {loginMethod === "google" && !showEmailForm && (
-          <div className="flex justify-center mt-5">
-            <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError} size="large" theme="filled_blue" />
-          </div>
-        )}
-
-        {!showEmailForm && (
-          <Button
-            label="Register with Email"
-            className="w-full bg-[#008BE0] hover:bg-blue-700 text-white rounded-lg py-3 font-semibold mt-5"
-            onClick={() => setShowEmailForm(true)}
-            type="button"
-          />
-        )}
-
-        {showEmailForm && (
-          <>
-            <div className="flex gap-2">
-              {renderInputs([
-                { name: "firstName", type: "text", placeholder: "First Name" },
-                { name: "lastName", type: "text", placeholder: "Last Name" },
-              ])}
-            </div>
-            {renderInputs([
-              { name: "email", type: "email", placeholder: "Email Address" },
-              { name: "phone", type: "tel", placeholder: "Phone Number" },
-              { name: "password", type: "password", placeholder: "Password" },
-              { name: "verifyPassword", type: "password", placeholder: "Verify Password" },
-            ])}
-
-            <Button
-              label="Sign Up"
-              type="submit"
-              className="w-full py-3 rounded-lg font-semibold bg-[#008BE0] text-white hover:bg-blue-700"
-            />
-          </>
-        )}
-      </>
-    );
+    } catch (err) {
+      setOtpSent(false);
+      notify(err?.response?.data?.message || "Failed to send OTP", "error");
+    }
   };
 
-  // ---------- VENDOR FORM ----------
-  const VendorForm = () => {
-    return (
-      <>
-        <div className="flex gap-2">{renderInputs([{name:"firstName",type:"text",placeholder:"First Name"},{name:"lastName",type:"text",placeholder:"Last Name"}])}</div>
+  const fadeClass = fade ? "opacity-0 translate-y-3" : "opacity-100 translate-y-0";
 
-        <select
-          name="businessType"
-          value={form.businessType}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          required
-          className="w-full border-gray-300 rounded-lg p-3 outline-1 outline-gray-300 focus:ring-2 focus:ring-blue-400 relative"
-        >
-          <option value="">Select Business Type</option>
-          <option value="restaurant">Restaurant</option>
-          <option value="food_vendor">Food Vendor</option>
-          <option value="catering">Catering</option>
-          <option value="bakery">Bakery</option>
-          <option value="pharmacy">Pharmacy</option>
-          <option value="eatary">Eatary</option>
-          <option value="electronics">Electronics</option>
-        </select>
-        {touched.businessType && !errors.businessType && form.businessType && <FaCheckCircle className="text-green-500 absolute right-3 top-3"/>}
-        {errors.businessType && <div className="text-red-500 text-xs">{errors.businessType}</div>}
-
-        <div className="flex gap-2">{renderInputs([{name:"phone",type:"tel",placeholder:"Phone Number"},{name:"email",type:"email",placeholder:"Business Email"}])}</div>
-        {renderInputs([{name:"password",type:"password",placeholder:"Password"},{name:"verifyPassword",type:"password",placeholder:"Verify Password"}])}
-
-        <Checkbox name="updatesAccepted" label="I'd like updates via WhatsApp or email" />
-        <Checkbox name="privacyAccepted" label={<span>I accept the <a href="/privacy-policy" className="text-[#008BE0] hover:underline font-semibold">Privacy Policy</a></span>} />
-
-        <Button label="Register as Vendor" type="submit" className="w-full bg-[#008BE0] hover:bg-blue-700 text-white rounded-lg py-3 font-semibold"/>
-      </>
-    );
-  };
-
-  // ---------- RIDER FORM ----------
-  const RiderForm = () => {
-    const steps = [
-      {
-        id: 1,
-        content: (
-          <>
-            <select name="city" value={form.city} onChange={handleChange} onBlur={handleBlur} required className="w-full border-gray-300 rounded-lg p-3">
-              <option value="">Select City</option>
-              {["Lagos", "Abuja", "Port Harcourt", "Ibadan"].map((city) => (<option key={city}>{city}</option>))}
-            </select>
-            {touched.city && !errors.city && form.city && <FaCheckCircle className="text-green-500 absolute right-3 top-3"/>}
-            {errors.city && <div className="text-red-500 text-xs">{errors.city}</div>}
-            <Button label="Next" onClick={()=>setStep(2)} className="w-full bg-[#008BE0] text-white py-2 rounded-lg text-sm mt-3" type="button"/>
-          </>
-        ),
-      },
-      {
-        id:2,
-        content: (
-          <>
-            <select name="vehicle" value={form.vehicle} onChange={handleChange} onBlur={handleBlur} required className="w-full border-gray-300 rounded-lg p-3">
-              <option value="">Select Vehicle Type</option>
-              {["Motorcycle", "Tricycle", "Bicycle", "Electric Bike"].map(v=> (<option key={v}>{v}</option>))}
-            </select>
-            {touched.vehicle && !errors.vehicle && form.vehicle && <FaCheckCircle className="text-green-500 absolute right-3 top-3"/>}
-            {errors.vehicle && <div className="text-red-500 text-xs">{errors.vehicle}</div>}
-            <div className="flex justify-between gap-3 mt-3">
-              <Button label="Back" onClick={()=>setStep(1)} className="w-1/2 bg-gray-300 text-gray-700 rounded-lg py-2 text-sm" type="button"/>
-              <Button label="Next" onClick={()=>setStep(3)} className="w-1/2 bg-[#008BE0] text-white rounded-lg py-2 text-sm" type="button"/>
-            </div>
-          </>
-        )
-      },
-      {
-        id:3,
-        content: (
-          <>
-            {renderInputs([
-              { name:"firstName", type:"text", placeholder:"First Name" },
-              { name:"lastName", type:"text", placeholder:"Last Name" },
-              { name:"email", type:"email", placeholder:"Email Address" },
-              { name:"password", type:"password", placeholder:"Password" },
-              { name:"verifyPassword", type:"password", placeholder:"Verify Password" },
-              { name:"phone", type:"tel", placeholder:"Phone Number" }
-            ])}
-            <div className="flex justify-between gap-3 mt-3">
-              <Button label="Back" onClick={()=>setStep(2)} className="w-1/2 bg-gray-300 text-gray-700 rounded-lg py-2 text-sm" type="button"/>
-              <Button label="Next" onClick={()=>setStep(4)} className="w-1/2 bg-[#008BE0] text-white rounded-lg py-2 text-sm" type="button"/>
-            </div>
-          </>
-        )
-      },
-      {
-        id:4,
-        content: (
-          <>
-            <Checkbox name="privacyAccepted" label={<span>I accept the <a href="/rider-privacy" className="text-[#008BE0] hover:underline font-semibold">Rider Privacy Statement</a></span>} />
-            <div className="border-2 border-gray-300 rounded-lg p-4 text-center text-gray-600 text-sm mt-2">✅ Verify with Cloudflare</div>
-            <div className="flex justify-between gap-3 mt-3">
-              <Button label="Back" onClick={()=>setStep(3)} className="w-1/2 bg-gray-300 text-gray-700 rounded-lg py-2 text-sm" type="button"/>
-              <Button label="Register as Rider" type="submit" className="w-1/2 bg-[#008BE0] text-white rounded-lg py-2 text-sm"/>
-            </div>
-          </>
-        )
-      }
-    ];
-
-    return steps.find(s=>s.id===step)?.content || null;
-  };
-
-  // ---------- MAIN RETURN ----------
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-screen bg-cover bg-center p-4" style={{ backgroundImage: `url(${RegImg})` }}>
-      <form onSubmit={handleSubmit} className="bg-white/90 backdrop-blur-md shadow-2xl rounded-2xl p-8 w-full max-w-md space-y-5 transition-transform duration-300 hover:scale-[1.02]">
-        <h2 className="text-3xl font-extrabold text-center text-[#008BE0]">Create Eazy Account</h2>
-        <div className="text-[#FFCF71] text-sm text-center">Choose your category</div>
+    <div
+      className="min-h-screen flex items-center justify-center bg-gray-50"
+      style={{ backgroundImage: `url(${RegBg})`, backgroundSize: "cover", backgroundPosition: "center" }}
+    >
+      <div className="backdrop-blur-md bg-white/80 rounded-2xl shadow-2xl p-6 mx-4 w-full max-w-5xl">
+        <div className="flex flex-col md:flex-row gap-8">
+          <div className="w-full md:w-1/2 p-4 flex flex-col justify-center">
+            <h1 className="text-3xl font-extrabold text-gray-800">Create your account</h1>
+            <p className="mt-2 text-sm text-gray-600">
+              Register as a <strong className="capitalize">{role}</strong>.
+            </p>
 
-        <select
-          name="role"
-          value={form.role}
-          onChange={(e) => {
-            const selectedRole = e.target.value;
-            setForm((prev) => ({ ...prev, role: selectedRole }));
-            setStep(1);
-            setShowEmailForm(false);
-            setOtpSent(false);
-          }}
-          className="w-full border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-400"
-        >
-          <option value="customer">Customer</option>
-          <option value="vendor">Vendor</option>
-          <option value="rider">Rider</option>
-        </select>
+            <div className="mt-4 flex flex-wrap gap-3 items-center">
+              {["customer", "vendor", "rider"].map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRole(r)}
+                  className={`px-4 py-2 rounded-full font-medium transition-all duration-300 ${
+                    role === r
+                      ? "bg-gradient-to-r from-indigo-600 to-indigo-400 text-white shadow-md hover:shadow-lg"
+                      : "border border-gray-300 hover:border-indigo-500 hover:text-indigo-600"
+                  }`}
+                >
+                  {r.charAt(0).toUpperCase() + r.slice(1)}
+                </button>
+              ))}
+            </div>
 
-        {form.role === "customer" && <CustomerForm />}
-        {form.role === "vendor" && <VendorForm />}
-        {form.role === "rider" && <RiderForm />}
-      </form>x
-    </div>
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              {/* Rider */}
+              {role === "rider" && (
+                <div className={`space-y-3 transform transition-all duration-500 ease-out ${fadeClass}`}>
+                  {renderSchema(schemas.rider, rider, handleRiderChange)}
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="riderTerms"
+                      type="checkbox"
+                      checked={rider.accepted}
+                      onChange={(e) => setRider((prev) => ({ ...prev, accepted: e.target.checked }))}
+                    />
+                    <label htmlFor="riderTerms" className="text-sm">
+                      I accept the <Link href="#">Rider Privacy Statement</Link>.
+                    </label>
+                  </div>
+                  <Button
+                    label={submitting ? "Creating..." : "Register"}
+                    type="submit"
+                    variant="primary"
+                    disabled={!isRiderValid || submitting}
+                    className="w-full"
+                  />
+                </div>
+              )}
+
+              {/* Vendor */}
+              {role === "vendor" && (
+                <div className={`space-y-3 transform transition-all duration-500 ease-out ${fadeClass}`}>
+                  {renderSchema(schemas.vendor, vendor, handleVendorChange)}
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="vendorTerms"
+                      type="checkbox"
+                      checked={vendor.accepted}
+                      onChange={(e) => setVendor((prev) => ({ ...prev, accepted: e.target.checked }))}
+                    />
+                    <label htmlFor="vendorTerms" className="text-sm">
+                      I accept the <Link href="#">Privacy Policy</Link>.
+                    </label>
+                  </div>
+                  <Button
+                    label={submitting ? "Creating..." : "Register"}
+                    type="submit"
+                    variant="primary"
+                    disabled={!isVendorValid || submitting}
+                    className="w-full"
+                  />
+                </div>
+              )}
+
+              {/* Customer */}
+              {role === "customer" && (
+                <div className={`space-y-3 transform transition-all duration-500 ease-out ${fadeClass}`}>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setRegisterMethod("whatsapp")}
+                      className={`flex items-center justify-center gap-2 px-3 py-2 rounded-md w-1/3 text-sm font-medium transition-all ${
+                        registerMethod === "whatsapp"
+                          ? "bg-green-500 text-white"
+                          : "border border-gray-300 hover:border-green-400"
+                      }`}
+                    >
+                      <FaWhatsapp /> WhatsApp
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setRegisterMethod("google")}
+                      className={`flex items-center justify-center gap-2 px-3 py-2 rounded-md w-1/3 text-sm font-medium transition-all ${
+                        registerMethod === "google"
+                          ? "bg-red-500 text-white"
+                          : "border border-gray-300 hover:border-red-400"
+                      }`}
+                    >
+                      <FaGoogle /> Google
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setRegisterMethod("email")}
+                      className={`flex items-center justify-center gap-2 px-3 py-2 rounded-md w-1/3 text-sm font-medium transition-all ${
+                        registerMethod === "email"
+                          ? "bg-indigo-600 text-white"
+                          : "border border-gray-300 hover:border-indigo-400"
+                      }`}
+                    >
+                      <FaCheckCircle /> Email
+                    </button>
+                  </div>
+
+                  {/* WhatsApp signup */}
+                  {registerMethod === "whatsapp" && (
+                    <div className={`transition-all duration-500 ${fadeClass}`}>
+                      {!otpSent ? (
+                        <>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={waCountryCode}
+                              onChange={(e) => setWaCountryCode(e.target.value)}
+                              className="w-20 p-2 border rounded-md"
+                            />
+                            <input
+                              type="text"
+                              placeholder="WhatsApp phone"
+                              value={waPhone}
+                              onChange={(e) => setWaPhone(e.target.value)}
+                              className="flex-1 p-2 border rounded-md"
+                            />
+                          </div>
+                          <Button
+                            label="Send OTP"
+                            onClick={handleSendOtp}
+                            className="mt-3 w-full"
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <Input
+                            type="text"
+                            placeholder="Enter OTP"
+                            value={otpValue}
+                            onChange={(e) => setOtpValue(e.target.value)}
+                          />
+                          <Button
+                            label={`Verify ${timer > 0 ? `(${timer})` : ""}`}
+                            disabled={timer > 0}
+                            className="mt-3 w-full"
+                          />
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Google signup */}
+                  {registerMethod === "google" && (
+                    <div className={`transition-all duration-500 ${fadeClass}`}>
+                      <GoogleLogin
+                        onSuccess={(res) => notify("Google login success", "success")}
+                        onError={() => notify("Google login failed", "error")}
+                      />
+                    </div>
+                  )}
+
+                  {/* Email signup */}
+                  {registerMethod === "email" && (
+                    <div className={`space-y-3 transition-all duration-500 ${fadeClass}`}>
+                      {renderSchema(schemas.customerEmail, customer, handleCustomerChange)}
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="custTerms"
+                          type="checkbox"
+                          checked={customer.acceptedTerms}
+                          onChange={(e) =>
+                            setCustomer((prev) => ({ ...prev, acceptedTerms: e.target.checked }))
+                          }
+                        />
+                        <label htmlFor="custTerms" className="text-sm">
+                          By creating account, you accept our{" "}
+                          <Link href="#">Terms of Service</Link>,{" "}
+                          <Link href="#">Privacy Policy</Link> and{" "}
+                          <Link href="#">Cookies</Link>.
+                        </label>
+                      </div>
+                      <Button
+                        label={submitting ? "Creating..." : "Register"}
+                        type="submit"
+                        variant="primary"
+                        disabled={!isCustomerValid || submitting}
+                        className="w-full"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </form>
+          </div>
+
+          <div className="hidden md:flex md:w-1/2 p-6 flex-col justify-center items-start bg-white/50 rounded-xl shadow-inner">
+            <h2 className="text-2xl font-bold text-gray-800">Fast. Fresh. Eazy.</h2>
+            <p className="mt-3 text-sm text-gray-700">
+              Join thousands of vendors, riders and customers using Eazy to get food delivered quickly and safely.
+            </p>
+            <ul className="mt-6 space-y-2 text-sm text-gray-600">
+              <li>✅ Secure authentication</li>
+              <li>✅ OTP verification for phone signups</li>
+              <li>✅ Modern, responsive design</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div> 
   );
 }

@@ -1,6 +1,7 @@
 // src/utils/api.js
 import axios from "axios";
 import { notify } from "../components/common/Notification";
+import { clearAuthToken, logoutAll } from "./auth";
 
 /**
  * ===== Base API Setup =====
@@ -14,50 +15,41 @@ const API = axios.create({
 
 /**
  * ===== Role Tokens =====
- * Store/retrieve tokens separately for each user type
  */
-export function setAdminToken(token) {
-  if (token) localStorage.setItem("adminToken", token);
-  else localStorage.removeItem("adminToken");
-}
-
-export function getAdminToken() {
-  return localStorage.getItem("adminToken");
-}
-
-export function setVendorToken(token) {
-  if (token) localStorage.setItem("vendorToken", token);
-  else localStorage.removeItem("vendorToken");
-}
-
-export function getVendorToken() {
-  return localStorage.getItem("vendorToken");
-}
-
-export function setRiderToken(token) {
-  if (token) localStorage.setItem("riderToken", token);
-  else localStorage.removeItem("riderToken");
-}
-
-export function getRiderToken() {
-  return localStorage.getItem("riderToken");
-}
-
-export function setCustomerToken(token) {
-  if (token) localStorage.setItem("customerToken", token);
-  else localStorage.removeItem("customerToken");
-}
-
-export function getCustomerToken() {
-  return localStorage.getItem("customerToken");
-}
+export function setSuperAdminToken(token) { if (token) localStorage.setItem("superAdminToken", token); else localStorage.removeItem("superAdminToken"); }
+export function getSuperAdminToken() { return localStorage.getItem("superAdminToken"); }
+export function setAdminToken(token) { if (token) localStorage.setItem("adminToken", token); else localStorage.removeItem("adminToken"); }
+export function getAdminToken() { return localStorage.getItem("adminToken"); }
+export function setVendorToken(token) { if (token) localStorage.setItem("vendorToken", token); else localStorage.removeItem("vendorToken"); }
+export function getVendorToken() { return localStorage.getItem("vendorToken"); }
+export function setRiderToken(token) { if (token) localStorage.setItem("riderToken", token); else localStorage.removeItem("riderToken"); }
+export function getRiderToken() { return localStorage.getItem("riderToken"); }
+export function setCustomerToken(token) { if (token) localStorage.setItem("customerToken", token); else localStorage.removeItem("customerToken"); }
+export function getCustomerToken() { return localStorage.getItem("customerToken"); }
 
 /**
  * ===== Get Active Token (All Roles) =====
  */
 export function getAuthToken() {
-  return getAdminToken() || getVendorToken() || getRiderToken() || getCustomerToken();
+  return (
+    getSuperAdminToken() ||
+    getAdminToken() ||
+    getVendorToken() ||
+    getRiderToken() ||
+    getCustomerToken()
+  );
 }
+
+/**
+ * ===== Auto Sync Auth Across Tabs =====
+ */
+window.addEventListener("storage", (e) => {
+  if (["superAdminToken","adminToken","vendorToken","riderToken","customerToken"].includes(e.key) && !e.newValue) {
+    logoutAll();
+    notify.info("Logged Out", "Your session has ended.");
+    window.location.href = "/login";
+  }
+});
 
 /**
  * ===== Request Interceptor =====
@@ -80,20 +72,16 @@ API.interceptors.response.use(
     const status = error.response?.status;
     const message = error.response?.data?.message || error.message;
 
-    if (status === 401 || message.toLowerCase().includes("token")) {
+    if (status === 401 || (message && message.toLowerCase().includes("token"))) {
+      logoutAll();
       notify.error("Session Expired", "Please log in again.");
-      localStorage.clear();
-      window.location.href = "/login";
+      setTimeout(() => { window.location.href = "/login"; }, 800);
       return Promise.reject(error);
     }
 
-    if (status >= 500) {
-      notify.error("Server Error", "Something went wrong on the server.");
-    } else if (status >= 400) {
-      notify.error("Request Error", message);
-    } else {
-      notify.error("API Error", message);
-    }
+    if (status >= 500) notify.error("Server Error", "Something went wrong on the server.");
+    else if (status >= 400) notify.error("Request Error", message);
+    else notify.error("API Error", message);
 
     return Promise.reject(error);
   }
@@ -111,16 +99,52 @@ export const ApiHelper = {
 };
 
 /**
- * ===== Orders API =====
+ * ===== Enhanced Mail Trigger Helper =====
  */
-export const OrderAPI = {
-  createOrder: (data) => API.post("/orders", data).then((res) => res.data),
-  assignRider: (data) => API.post("/orders/assign-rider", data).then((res) => res.data),
-  confirmPayment: (orderId) => API.patch(`/orders/${orderId}/confirm-payment`).then((res) => res.data),
-  getOrders: (params) => API.get("/orders", { params }).then((res) => res.data),
-  getActiveVendorOrders: () => API.get("/orders/vendor/active").then((res) => res.data),
-  getActiveRiderOrders: (riderId) => API.get(`/orders/rider/active/${riderId}`).then((res) => res.data),
-};
+async function sendMailTrigger(email, subject, body, options = {}) {
+  if (!email) return;
+  try {
+    let fullBody = body || "";
+    if (options.onboardingLink) fullBody += `<p><a href="${options.onboardingLink}">Start Onboarding</a></p>`;
+    await API.post("/mail/send", { to: email, subject, body: fullBody });
+  } catch (err) {
+    console.warn("Mail trigger failed:", err);
+  }
+}
+
+/**
+ * ===== Onboarding Reminder Helper =====
+ */
+export async function sendOnboardingReminders() {
+  try {
+    const pendingVendors = await API.get("/superadmin/vendors/pending-onboarding");
+    const pendingRiders = await API.get("/superadmin/riders/pending-onboarding");
+
+    for (const vendor of pendingVendors.data) {
+      await sendMailTrigger(
+        vendor.businessEmail,
+        "Reminder: Complete Your Vendor Onboarding",
+        `<h3>Hello ${vendor.name},</h3>
+         <p>Your vendor account has been approved but you haven't completed onboarding yet.</p>
+         <p>Please complete onboarding to start adding products and receiving orders.</p>`,
+        { onboardingLink: `${import.meta.env.VITE_APP_URL}/vendor/dashboard` }
+      );
+    }
+
+    for (const rider of pendingRiders.data) {
+      await sendMailTrigger(
+        rider.email,
+        "Reminder: Complete Your Rider Onboarding",
+        `<h3>Hello ${rider.name},</h3>
+         <p>Your rider account has been approved but you haven't completed onboarding yet.</p>
+         <p>Please complete onboarding to start receiving and managing deliveries.</p>`,
+        { onboardingLink: `${import.meta.env.VITE_APP_URL}/rider/dashboard` }
+      );
+    }
+  } catch (err) {
+    console.warn("Failed to send onboarding reminders:", err);
+  }
+}
 
 /**
  * ===== Users API =====
@@ -129,33 +153,95 @@ export const UserAPI = {
   getProfile: () => API.get("/users/me").then((res) => res.data),
   updateProfile: (data) => API.put("/users/me", data).then((res) => res.data),
   login: (data) => API.post("/auth/login", data).then((res) => res.data),
-  register: (data) => API.post("/auth/register", data).then((res) => res.data),
+  register: async (data) => {
+    const res = await API.post("/auth/register", data);
+    const email = res.data.user?.email;
+    await sendMailTrigger(
+      email,
+      "Welcome to Eazy!",
+      `<h3>Welcome to Eazy!</h3>
+       <p>Your account has been created successfully.</p>
+       <p>Please verify your email or use the OTP sent to complete registration.</p>`
+    );
+    return res.data;
+  },
+  sendOtp: async (data) => {
+    const res = await API.post("/auth/send-otp", data);
+    const email = data.email;
+    await sendMailTrigger(
+      email,
+      "Your Eazy OTP",
+      `<p>Your One-Time Password (OTP) is: <strong>${res.data.otp}</strong></p>`
+    );
+    return res.data;
+  },
 };
 
 /**
- * ===== Vendors API =====
+ * ===== Super Admin API =====
  */
-export const VendorAPI = {
-  getProducts: () => API.get("/products/vendor").then((res) => res.data),
-  getOffers: () => API.get("/offers/vendor").then((res) => res.data),
-  updateOffer: (offerId, data) => API.put(`/offers/${offerId}`, data).then((res) => res.data),
+export const SuperAdminAPI = {
+  login: (data) => API.post("/superadmin/login", data).then((res) => res.data),
+  getAnalytics: () => API.get("/superadmin/analytics").then((res) => res.data),
+
+  approveVendor: async (vendorId) => {
+    const res = await API.patch(`/superadmin/vendors/${vendorId}/approve`);
+    const email = res.data.vendor?.businessEmail;
+    await sendMailTrigger(
+      email,
+      "Vendor Approved & Onboarding Complete",
+      `<h3>Congratulations!</h3>
+       <p>Your vendor account has been approved.</p>
+       <p>You can now fully use the Eazy platform to manage products, view orders, and receive payments.</p>`,
+      { onboardingLink: `${import.meta.env.VITE_APP_URL}/vendor/dashboard` }
+    );
+    return res.data;
+  },
+
+  approveRider: async (riderId) => {
+    const res = await API.patch(`/superadmin/riders/${riderId}/approve`);
+    const email = res.data.rider?.email;
+    await sendMailTrigger(
+      email,
+      "Rider Approved & Onboarding Complete",
+      `<h3>Congratulations!</h3>
+       <p>Your rider account has been approved.</p>
+       <p>You can now fully use the Eazy platform to receive and manage delivery tasks.</p>`,
+      { onboardingLink: `${import.meta.env.VITE_APP_URL}/rider/dashboard` }
+    );
+    return res.data;
+  },
+
+  approveProduct: async (productId) => {
+    const res = await API.patch(`/superadmin/products/${productId}/approve`);
+    const email = res.data.product?.vendor?.businessEmail;
+    await sendMailTrigger(
+      email,
+      "Product Approved & Live",
+      `<p>Your product "${res.data.product.name}" has been approved and is now live on Eazy.</p>
+       <p>You can now manage it from your vendor dashboard and start receiving orders.</p>`
+    );
+    return res.data;
+  },
 };
 
 /**
- * ===== Riders API =====
+ * ===== Manual Token Refresh =====
  */
-export const RiderAPI = {
-  getTasks: (riderId) => API.get(`/riders/${riderId}/tasks`).then((res) => res.data),
-  updateEarnings: (riderId, data) => API.patch(`/riders/${riderId}/earnings`, data).then((res) => res.data),
-};
-
-/**
- * ===== Chat API =====
- */
-export const ChatAPI = {
-  getChats: () => API.get("/chats").then((res) => res.data),
-  sendMessage: (chatId, message) => API.post(`/chats/${chatId}/message`, { message }).then((res) => res.data),
-  createChat: (participants) => API.post("/chats", { participants }).then((res) => res.data),
-};
+export async function refreshToken(role, otpData) {
+  try {
+    const response = await API.post(`/auth/${role}/refresh-token`, otpData);
+    const { token } = response.data;
+    if (token) {
+      localStorage.setItem(`${role}Token`, token);
+      notify.success("Token Refreshed", "Your session has been renewed.");
+      return token;
+    }
+  } catch (err) {
+    notify.error("Token Refresh Failed", err.response?.data?.message || err.message);
+    logoutAll();
+    window.location.href = "/login";
+  }
+}
 
 export default API;

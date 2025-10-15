@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import API from "../../utils/api";
+import API, { refreshToken } from "../../utils/api";
 import { setAuthToken } from "../../utils/auth";
 import { notify } from "../../components/common/Notification";
 import { useNavigate } from "react-router-dom";
@@ -7,7 +7,7 @@ import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import { notifyAuthChange } from "../../utils/authEvents";
 import { GoogleLogin } from "@react-oauth/google";
-import { jwtDecode } from "jwt-decode"; 
+import { jwtDecode } from "jwt-decode";
 import Loginimg from "../../assets/logimg.png";
 
 export default function Login() {
@@ -47,7 +47,6 @@ export default function Login() {
     try {
       const res = await API.post("/auth/login", form);
       const { token, user } = res.data;
-
       localStorage.setItem("customerToken", token);
       localStorage.setItem("customerName", user.name);
       notifyAuthChange();
@@ -83,7 +82,6 @@ export default function Login() {
     try {
       const res = await API.post("/auth/verify-otp", { phone, otp: form.otp });
       const { token, user } = res.data;
-
       localStorage.setItem("customerToken", token);
       localStorage.setItem("customerName", user.name);
       notifyAuthChange();
@@ -94,6 +92,15 @@ export default function Login() {
       notify.error("OTP verification failed", err.response?.data?.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    try {
+      await refreshToken("customer", { otp: form.otp });
+      notify.success("New OTP has been sent successfully.");
+    } catch (err) {
+      notify.error("Failed to resend OTP", err.response?.data?.message);
     }
   };
 
@@ -118,7 +125,10 @@ export default function Login() {
   const loginMethods = form.role === "customer" ? ["email", "whatsapp", "google"] : ["email"];
 
   return (
-    <div className="relative flex items-center justify-center min-h-screen bg-cover bg-center p-4" style={{ backgroundImage: `url(${Loginimg})` }}>
+    <div
+      className="relative flex items-center justify-center min-h-screen bg-cover bg-center p-4"
+      style={{ backgroundImage: `url(${Loginimg})` }}
+    >
       <div className="absolute inset-0 bg-black/40"></div>
 
       <div className="relative bg-white/90 backdrop-blur-md shadow-2xl rounded-2xl p-8 w-full max-w-md space-y-6 transition-transform duration-300 hover:scale-[1.02]">
@@ -140,25 +150,36 @@ export default function Login() {
           <option value="rider">Rider</option>
         </select>
 
+        {/* ✅ Upgraded Buttons to match Register UI */}
         {form.role === "customer" && (
-          <div className="flex justify-between gap-2">
+          <div className="flex justify-between gap-3">
             {loginMethods.map((method) => {
-              const label = method.charAt(0).toUpperCase() + method.slice(1);
-              const color =
+              const label =
                 method === "google"
-                  ? "bg-red-500 text-white"
+                  ? "Google"
                   : method === "whatsapp"
-                  ? "bg-green-600 text-white"
-                  : "bg-[#008BE0] text-white";
+                  ? "WhatsApp"
+                  : "Email";
+
+              const activeStyle =
+                method === "google"
+                  ? "bg-gradient-to-r from-red-500 to-red-600 shadow-lg shadow-red-400/40"
+                  : method === "whatsapp"
+                  ? "bg-gradient-to-r from-green-500 to-green-600 shadow-lg shadow-green-400/40"
+                  : "bg-gradient-to-r from-[#008BE0] to-[#00C2FF] shadow-lg shadow-blue-400/40";
+
               return (
-                <Button
+                <button
                   key={method}
-                  label={label}
-                  className={`w-1/3 rounded-lg py-2 font-semibold ${
-                    loginMethod === method ? color : "bg-blue-200 text-gray-700"
-                  } hover:scale-[1.03]`}
                   onClick={() => setLoginMethod(method)}
-                />
+                  className={`flex-1 py-2 rounded-lg text-white font-semibold transition-all duration-300 ${
+                    loginMethod === method
+                      ? `${activeStyle} scale-[1.03]`
+                      : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+                  }`}
+                >
+                  {label}
+                </button>
               );
             })}
           </div>
@@ -166,7 +187,6 @@ export default function Login() {
 
         {loginMethod === "email" && (
           <form onSubmit={handleEmailLogin} className="space-y-5">
-            {/* ✅ validateOnBlur prevents typing block */}
             <Input type="email" name="email" placeholder="Email Address" value={form.email} onChange={handleChange} required validateOnBlur />
             <Input type="password" name="password" placeholder="Password" value={form.password} onChange={handleChange} required validateOnBlur />
 
@@ -211,7 +231,7 @@ export default function Login() {
               <>
                 <Input type="text" name="otp" placeholder="Enter OTP" value={form.otp} onChange={handleChange} required validateOnBlur />
                 <div className="flex justify-between text-sm text-gray-500">
-                  <span className="text-green-600 cursor-pointer hover:underline" onClick={handleWhatsAppLogin}>
+                  <span className="text-green-600 cursor-pointer hover:underline" onClick={handleResendOtp}>
                     Resend OTP
                   </span>
                 </div>

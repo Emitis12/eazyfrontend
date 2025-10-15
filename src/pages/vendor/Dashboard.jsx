@@ -35,8 +35,18 @@ export default function VendorDashboard() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [incomingOrder, setIncomingOrder] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false); // First-time vendor tutorial modal
   const socketRef = useRef(null);
   const pollingRef = useRef(null);
+
+  // --- First-time tutorial ---
+  useEffect(() => {
+    const firstTime = sessionStorage.getItem("firstTimeVendor");
+    if (!firstTime) {
+      setShowTutorial(true);
+      sessionStorage.setItem("firstTimeVendor", "seen");
+    }
+  }, []);
 
   // --- Fetch Active Orders ---
   const fetchActiveOrders = async () => {
@@ -266,6 +276,26 @@ export default function VendorDashboard() {
             roomId="vendor_dashboard_room"
             userName="Vendor"
           />
+        )}
+
+        {/* First-Time Vendor Tutorial Modal */}
+        {showTutorial && (
+          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 sm:p-6">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 sm:p-8 relative animate-fadeIn">
+              <h2 className="text-2xl font-bold mb-4 text-center">Welcome to Your Dashboard!</h2>
+              <p className="text-gray-700 mb-4">Watch this quick tutorial to get started.</p>
+              <div className="aspect-video mb-4">
+                <video controls className="w-full h-full rounded-lg">
+                  <source src="/videos/vendor_tutorial.mp4" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button label="Skip" onClick={() => setShowTutorial(false)} variant="secondary" />
+                <Button label="Close" onClick={() => setShowTutorial(false)} variant="primary" />
+              </div>
+            </div>
+          </div>
         )}
       </main>
     </div>

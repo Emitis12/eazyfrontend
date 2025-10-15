@@ -17,3 +17,11 @@ export default function Card({
     </motion.div>
   );
 }
+
+// ✅ Add this named export to support { Card, CardContent } import syntax
+export const CardContent = ({ children, className = "" }) => (
+  <div className={`p-2 ${className}`}>{children}</div>
+);
+
+// ✅ Optional: if you still want to import both using named imports only
+export { Card as Card };

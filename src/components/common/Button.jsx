@@ -3,17 +3,17 @@ import { Spin } from "antd";
 import { notify } from "./Notification";
 
 /**
- * 🔹 Premium Smart Button Component
+ * 🌟 Premium Smart Button Component
  * Features:
  * - Async handler support (auto loading + notify)
- * - Built-in Ant Design notifications
+ * - Premium gradient + hover glow
  * - Variants: primary | outline | ghost
- * - Custom class override support
+ * - Smooth transitions and accessibility
  */
 
 export default function Button({
   label,
-  onClick, // Can be async
+  onClick,
   type = "button",
   variant = "primary",
   disabled = false,
@@ -27,7 +27,6 @@ export default function Button({
 }) {
   const [loading, setLoading] = useState(false);
 
-  // ✅ Handles both sync and async logic
   const handleClick = async (e) => {
     if (disabled || loading) return;
     setLoading(true);
@@ -45,21 +44,30 @@ export default function Button({
     }
   };
 
-  // ✅ Styling presets
   const baseStyles =
-    "flex items-center justify-center px-5 py-2.5 rounded-full font-semibold transition-all duration-300 focus:outline-none active:scale-95";
+    "relative flex items-center justify-center px-6 py-2.5 rounded-full font-semibold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#009BFF]/40 active:scale-95 overflow-hidden";
 
   const variants = {
-    primary:
-      "bg-[#008BE0] hover:bg-[#009BFF] text-white shadow-md hover:shadow-lg",
-    outline:
-      "border border-[#008BE0] text-[#008BE0] hover:bg-[#008BE0] hover:text-white",
-    ghost:
-      "text-[#008BE0] hover:text-[#009BFF] hover:bg-[#008BE020] border border-transparent",
+    primary: `
+      bg-gradient-to-r from-[#008BE0] to-[#00AEEF] text-white shadow-[0_4px_14px_rgba(0,139,224,0.3)]
+      hover:shadow-[0_6px_20px_rgba(0,155,255,0.5)]
+      hover:brightness-110 hover:translate-y-[-1px]
+      after:absolute after:inset-0 after:bg-gradient-to-r after:from-white/10 after:to-transparent
+      after:opacity-0 hover:after:opacity-20 after:transition-all after:duration-500
+    `,
+    outline: `
+      border border-[#008BE0] text-[#008BE0]
+      hover:bg-gradient-to-r hover:from-[#008BE0] hover:to-[#00AEEF] hover:text-white
+      hover:shadow-[0_4px_14px_rgba(0,139,224,0.3)]
+    `,
+    ghost: `
+      text-[#008BE0] hover:text-[#009BFF]
+      hover:bg-[#008BE020] border border-transparent
+    `,
   };
 
   const combinedStyles = `${baseStyles} ${variants[variant]} ${
-    disabled ? "opacity-50 cursor-not-allowed" : ""
+    disabled ? "opacity-60 cursor-not-allowed" : ""
   } ${className}`;
 
   return (
