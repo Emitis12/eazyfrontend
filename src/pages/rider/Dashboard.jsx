@@ -26,13 +26,14 @@ export default function Dashboard({ riderId, isLoggedIn }) {
   const [newOrdersCount, setNewOrdersCount] = useState(0);
   const [incomingOrder, setIncomingOrder] = useState(null);
   const [timeLeft, setTimeLeft] = useState(10);
+  const [isOnline, setIsOnline] = useState(false); // ✅ Rider online toggle state
 
-  const [showTutorial, setShowTutorial] = useState(false); // First-time tutorial modal
+  const [showTutorial, setShowTutorial] = useState(false);
   const socketRef = useRef(null);
   const countdownRef = useRef(null);
   const notificationSound = useRef(new Audio("/sounds/notification.mp3"));
 
-  // --- Check first-time rider for tutorial ---
+  // --- First-time tutorial ---
   useEffect(() => {
     const firstTime = sessionStorage.getItem("firstTimeRider");
     if (!firstTime) {
@@ -51,18 +52,14 @@ export default function Dashboard({ riderId, isLoggedIn }) {
     socket.emit("join_rider_room", riderId);
 
     socket.on("new_order", (order) => {
+      if (!isOnline) return; // ✅ Only receive if online
       setIncomingOrder(order);
       setTimeLeft(10);
       setNewOrdersCount((prev) => prev + 1);
-
-      // Play notification sound
       notificationSound.current.loop = true;
       notificationSound.current.play().catch(() => {});
-
-      // Toast notification
       notify.info("New Order!", `Order #${order._id} assigned to you.`);
 
-      // Desktop notification
       if ("Notification" in window) {
         if (Notification.permission === "granted") {
           new Notification("New Order!", {
@@ -80,12 +77,11 @@ export default function Dashboard({ riderId, isLoggedIn }) {
       clearInterval(countdownRef.current);
       notificationSound.current.pause();
     };
-  }, [riderId, isLoggedIn]);
+  }, [riderId, isLoggedIn, isOnline]);
 
   // --- Countdown for incoming order ---
   useEffect(() => {
     if (!incomingOrder) return;
-
     countdownRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -96,11 +92,9 @@ export default function Dashboard({ riderId, isLoggedIn }) {
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(countdownRef.current);
   }, [incomingOrder]);
 
-  // --- Handle order expiration ---
   const handleOrderExpire = async (orderId) => {
     notificationSound.current.pause();
     notificationSound.current.currentTime = 0;
@@ -113,7 +107,6 @@ export default function Dashboard({ riderId, isLoggedIn }) {
     }
   };
 
-  // --- Accept / Reject order ---
   const handleAcceptOrder = async () => {
     try {
       await API.post(`/orders/${incomingOrder._id}/accept`, { riderId });
@@ -121,7 +114,7 @@ export default function Dashboard({ riderId, isLoggedIn }) {
       notificationSound.current.pause();
       setIncomingOrder(null);
       clearInterval(countdownRef.current);
-    } catch (error) {
+    } catch {
       notify.error("Error", "Failed to accept the order.");
     }
   };
@@ -133,7 +126,7 @@ export default function Dashboard({ riderId, isLoggedIn }) {
       notificationSound.current.pause();
       setIncomingOrder(null);
       clearInterval(countdownRef.current);
-    } catch (error) {
+    } catch {
       notify.error("Error", "Failed to reject the order.");
     }
   };
@@ -153,6 +146,26 @@ export default function Dashboard({ riderId, isLoggedIn }) {
     notify.success("Withdrawal submitted!", `₦${amount.toLocaleString()} requested.`);
   };
 
+  // --- Toggle Online/Offline ---
+  const handleToggleStatus = async () => {
+    const newStatus = !isOnline;
+    setIsOnline(newStatus);
+    notify.info(
+      `You are now ${newStatus ? "ONLINE 🟢" : "OFFLINE 🔴"}`,
+      newStatus
+        ? "You can now receive orders."
+        : "You will not receive any new orders."
+    );
+
+    try {
+      // Update backend and notify server
+      await API.patch(`/riders/${riderId}/status`, { online: newStatus });
+      socketRef.current?.emit("rider_status_change", { riderId, online: newStatus });
+    } catch (error) {
+      console.error("Status update failed:", error);
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
@@ -160,7 +173,32 @@ export default function Dashboard({ riderId, isLoggedIn }) {
 
       {/* Main Content */}
       <main className="flex-1 p-6 relative">
-        <h2 className="text-3xl font-bold mb-6 text-gray-800">Rider Dashboard</h2>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <h2 className="text-3xl font-bold text-gray-800">Rider Dashboard</h2>
+
+          {/* ✅ Online/Offline Toggle */}
+          <div className="flex items-center gap-3">
+            <span
+              className={`text-sm font-medium ${
+                isOnline ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              {isOnline ? "Online" : "Offline"}
+            </span>
+            <button
+              onClick={handleToggleStatus}
+              className={`relative inline-flex h-6 w-12 items-center rounded-full transition ${
+                isOnline ? "bg-green-500" : "bg-gray-400"
+              }`}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                  isOnline ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
+        </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
@@ -229,7 +267,7 @@ export default function Dashboard({ riderId, isLoggedIn }) {
           </div>
         )}
 
-        {/* First-Time Rider Tutorial Modal */}
+        {/* First-Time Rider Tutorial */}
         {showTutorial && (
           <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 sm:p-6">
             <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 sm:p-8 relative animate-fadeIn">

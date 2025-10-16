@@ -8,9 +8,7 @@ import { clearAuthToken, logoutAll } from "./auth";
  */
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:3002/api",
-  headers: {
-    "Content-Type": "application/json",
-  },
+  headers: { "Content-Type": "application/json" },
 });
 
 /**
@@ -223,6 +221,30 @@ export const SuperAdminAPI = {
     );
     return res.data;
   },
+};
+
+/**
+ * ===== Rider Status API =====
+ */
+export const RiderAPI = {
+  updateStatus: async (riderId, online) => {
+    const res = await API.patch(`/riders/${riderId}/status`, { online });
+    notify.success(
+      "Status Updated",
+      `You are now ${online ? "Online" : "Offline"}`
+    );
+    return res.data;
+  },
+};
+
+/**
+ * ===== Wallet API =====
+ */
+export const WalletAPI = {
+  getWallet: (userId) => API.get(`/wallets/${userId}`).then(res => res.data),
+  getTransactions: (walletId) => API.get(`/wallets/${walletId}/transactions`).then(res => res.data),
+  addTransaction: (userId, type, amount, description) =>
+    API.post(`/wallets/${userId}/transactions`, { type, amount, description }).then(res => res.data),
 };
 
 /**

@@ -11,6 +11,7 @@ import {
   FaHeart,
   FaUser,
   FaPaperPlane,
+  FaUpload, // ✅ added icon for upload
 } from "react-icons/fa";
 
 /**
@@ -38,10 +39,11 @@ export const getSidebarLinks = (role, badgeCount = 0, handleTasksClick) => {
           label: "Active Orders", 
           path: "/vendor/active-orders", 
           icon: FaBoxOpen, 
-          badge: badgeCount > 0 ? badgeCount : null, // dynamic badge
-          onClick: handleTasksClick, // opens modal
+          badge: badgeCount > 0 ? badgeCount : null,
+          onClick: handleTasksClick,
         },
         { label: "Orders", path: "/vendor/orders", icon: FaBoxOpen },
+        { label: "Upload Meals", path: "/vendor/upload", icon: FaUpload }, // ✅ new link
         { label: "Products", path: "/vendor/products", icon: FaGift },
         { label: "Offers", path: "/vendor/offers", icon: FaGift },
         { label: "Wallet", path: "/vendor/wallet", icon: FaWallet },
