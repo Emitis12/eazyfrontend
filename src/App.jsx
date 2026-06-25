@@ -6,7 +6,7 @@ import Footer from "./components/layout/Footer/Footer";
 import BackToTopButton from "./components/common/BackToTop";
 
 // Routes
-import AppRoutes from "./routes/AppRoutes";
+import AppRoute,s from "./routes/AppRoutes";
 
 function App() {
   return (
